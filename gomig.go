@@ -5,5 +5,5 @@ import (
 )
 
 func main() {
-	fmt.Println("Welcome to gomig v.?.?")
+	fmt.Printf("Welcome to gomig v.%v.%v", GOMIG_MAJ_VERSION, GOMIG_MIN_VERSION)
 }
