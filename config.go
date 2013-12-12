@@ -2,35 +2,34 @@ package main
 
 import (
 	"fmt"
+	"github.com/aktau/gomig/db/common"
 	"io/ioutil"
 	"launchpad.net/goyaml"
 )
 
 /* type Config map[string]interface{} */
 
-type ConnConfig struct {
-	Hostname string `yaml:"hostname,omitempty"`
-	Port     int    `yaml:"port,omitempty"`
-	Username string `yaml:"username,omitempty"`
-	Password string `yaml:"password,omitempty"`
-	Database string `yaml:"database,omitempty"`
-	Compress bool   `yaml:"compress,omitempty"`
-}
-
 type DestinationConfig struct {
-	File     string      `yaml:"file,omitempty"`
-	Postgres *ConnConfig `yaml:"postgres,omitempty"`
+	File     string         `yaml:"file,omitempty"`
+	Postgres *common.Config `yaml:"postgres,omitempty"`
 }
 
 type Config struct {
-	Mysql        *ConnConfig                  `yaml:"mysql,omitempty"`
+	Mysql        *common.Config               `yaml:"mysql,omitempty"`
 	Destination  *DestinationConfig           `yaml:"destination,omitempty"`
 	Views        map[string]string            `yaml:"views,omitempty"`
 	Tables       map[string]map[string]string `yaml:"tables,omitempty"`
 	SuppressData bool                         `yaml:"supress_data"`
 	SuppressDdl  bool                         `yaml:"supress_ddl"`
 	Truncate     bool                         `yaml:"force_truncate"`
+	Merge        bool                         `yaml:"merge"`
 	Timezone     bool                         `yaml:"timezone"`
+
+	OnlyTables     map[string]bool `yaml:"-"`
+	PrivOnlyTables []string        `yaml:"only_tables,omitempty"`
+
+	ExcludeTables     map[string]bool `yaml:"-"`
+	PrivExcludeTables []string        `yaml:"exclude_tables,omitempty"`
 }
 
 func LoadConfig(file string) (*Config, error) {
@@ -48,6 +47,16 @@ func LoadConfig(file string) (*Config, error) {
 	err = c.Validate()
 	if err != nil {
 		return nil, err
+	}
+
+	c.OnlyTables = make(map[string]bool)
+	for _, table := range c.PrivOnlyTables {
+		c.OnlyTables[table] = true
+	}
+
+	c.ExcludeTables = make(map[string]bool)
+	for _, table := range c.PrivExcludeTables {
+		c.ExcludeTables[table] = true
 	}
 
 	return &c, err

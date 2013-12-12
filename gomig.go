@@ -2,6 +2,9 @@ package main
 
 import (
 	"fmt"
+	"github.com/aktau/gomig/db"
+	"github.com/aktau/gomig/db/common"
+	"log"
 )
 
 func main() {
@@ -11,6 +14,30 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
+	fmt.Printf("successfully loaded config:\n\n%v\n\n", conf)
 
-	fmt.Printf("sucesfully loaded config: %v\n", conf)
+	/* open source */
+	reader, err := db.OpenReader("mysql", conf.Mysql)
+	if err != nil {
+		log.Println("gomig: error while creating reader,", err)
+		return
+	}
+	defer reader.Close()
+
+	fmt.Println("ALL TABLES: ", reader.ListTables())
+
+	/* open destination */
+	var writer common.WriteCloser
+	if conf.Destination.File != "" {
+		writer, err = db.OpenFileWriter("postgres", conf.Destination.File)
+	} else {
+		writer, err = db.OpenWriter("postgres", conf.Destination.Postgres)
+	}
+	if err != nil {
+		log.Println("gomig: error while creating writer,", err)
+		return
+	}
+	defer writer.Close()
+
+	Convert(reader, writer, conf)
 }
