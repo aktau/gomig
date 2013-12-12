@@ -49,17 +49,18 @@ func LoadConfig(file string) (*Config, error) {
 		return nil, err
 	}
 
-	c.OnlyTables = make(map[string]bool)
-	for _, table := range c.PrivOnlyTables {
-		c.OnlyTables[table] = true
-	}
-
-	c.ExcludeTables = make(map[string]bool)
-	for _, table := range c.PrivExcludeTables {
-		c.ExcludeTables[table] = true
-	}
+	c.OnlyTables = stringSliceToSet(c.PrivOnlyTables)
+	c.ExcludeTables = stringSliceToSet(c.PrivExcludeTables)
 
 	return &c, err
+}
+
+func stringSliceToSet(sl []string) map[string]bool {
+	set := make(map[string]bool)
+	for _, item := range sl {
+		set[item] = true
+	}
+	return set
 }
 
 func (c *Config) Validate() error {
