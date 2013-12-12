@@ -54,67 +54,46 @@ func Convert(r common.ReadCloser, w common.WriteCloser, options *Config) error {
 		defer tempViews.Erase()
 	}
 
+	tables := r.FilteredTables(options.OnlyTables, options.ExcludeTables)
+
 	if !options.SuppressDdl {
-		createTables(r, w, options)
+		createTables(tables, w)
 	}
 	if options.Truncate {
-		truncateTables(r, w, options)
+		truncateTables(tables, w)
 	}
 	if !options.SuppressData {
 		if options.Merge {
-			mergeData(r, w, options)
+			for _, table := range tables {
+				w.MergeTable(table, r)
+			}
 		} else {
-			writeData(r, w, options)
+			writeData(tables, w)
 		}
 	}
 
-	createIndices(r, w, options)
-	createConstraints(r, w, options)
+	createIndices(tables, w)
+	createConstraints(tables, w)
 
 	return nil
 }
 
-func createTables(r common.ReadCloser, w common.WriteCloser, options *Config) error {
+func createTables(tables []*common.Table, w common.Writer) error {
 	return nil
 }
 
-func truncateTables(r common.ReadCloser, w common.WriteCloser, options *Config) error {
+func truncateTables(tables []*common.Table, w common.Writer) error {
 	return nil
 }
 
-/* the only one I need for the moment */
-func mergeData(r common.ReadCloser, w common.WriteCloser, options *Config) error {
-	tables := activeTables(r.ListTables(), options)
-
-	for _, table := range tables {
-		w.MergeTable(&table, r)
-	}
-
+func writeData(tables []*common.Table, w common.Writer) error {
 	return nil
 }
 
-func activeTables(alltables []common.Table, options *Config) []common.Table {
-	tables := make([]common.Table, 0, 4)
-	for _, table := range alltables {
-		_, incl := options.OnlyTables[table.Name]
-		_, excl := options.ExcludeTables[table.Name]
-
-		if incl && !excl {
-			tables = append(tables, table)
-		}
-	}
-
-	return tables
-}
-
-func writeData(r common.ReadCloser, w common.WriteCloser, options *Config) error {
+func createIndices(tables []*common.Table, w common.Writer) error {
 	return nil
 }
 
-func createIndices(r common.ReadCloser, w common.WriteCloser, options *Config) error {
-	return nil
-}
-
-func createConstraints(r common.ReadCloser, w common.WriteCloser, options *Config) error {
+func createConstraints(tables []*common.Table, w common.Writer) error {
 	return nil
 }

@@ -24,7 +24,7 @@ func main() {
 	}
 	defer reader.Close()
 
-	fmt.Println("ALL TABLES: ", reader.ListTables())
+	fmt.Println("ALL TABLES: ", reader.TableNames())
 
 	/* open destination */
 	var writer common.WriteCloser
