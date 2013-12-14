@@ -116,15 +116,14 @@ func (w *genericPostgresWriter) MergeTable(src *Table, dstName string, r Reader)
 	stmts = append(stmts, fmt.Sprintf("ANALYZE %v;\n", tmpName))
 
 	/* lock the target table */
-	stmts = append(stmts, fmt.Sprintf("LOCK TABLE %v IN EXCLUSIVE MODE;\n", dstName))
+	stmts = append(stmts, fmt.Sprintf("LOCK TABLE %v IN EXCLUSIVE MODE;", dstName))
 
 	/* UPDATE from temp table to target table based on PK */
 	stmts = append(stmts, fmt.Sprintf(`
 UPDATE %v
 SET    somedata = newvals.somedata
 FROM   %v
-WHERE  newvals.id = testtable.id;
-`, dstName, tmpName))
+WHERE  newvals.id = testtable.id;`, dstName, tmpName))
 
 	/* INSERT from temp table to target table based on PK */
 	stmts = append(stmts, fmt.Sprintf(`
