@@ -28,31 +28,56 @@ func NewFileExecutor(filename string) (*FileExecutor, error) {
 
 func (e *FileExecutor) Transaction(name string, statements []string) error {
 	/* write comment */
-	_, err := e.w.WriteString(fmt.Sprintf("-- %v", name))
+	_, err := e.w.WriteString(fmt.Sprintf("-- %v\n", name))
 	if err != nil {
 		return err
 	}
 
 	/* start transaction */
-	e.w.WriteString(SBegin)
+	e.w.WriteString(SBegin + ";\n\n")
 
 	/* write out all statements */
 	for _, stmt := range statements {
-		_, err := e.w.WriteString(stmt)
+		_, err := e.w.WriteString(stmt + "\n")
 		if err != nil {
 			return err
 		}
 	}
 
 	/* end transaction */
-	e.w.WriteString(SBegin)
+	e.w.WriteString(SCommit + ";\n\n")
 
 	return nil
 }
 
+func (e *FileExecutor) Multiple(name string, statements []string) []error {
+	errors := make([]error, 0, len(statements))
+
+	/* write comment */
+	_, err := e.w.WriteString(fmt.Sprintf("-- %v\n", name))
+	if err != nil {
+		errors = append(errors, err)
+	}
+
+	/* write out all statements, rollback in case of error */
+	for _, stmt := range statements {
+		_, err := e.w.WriteString(stmt + "\n")
+		if err != nil {
+			errors = append(errors, err)
+		}
+	}
+
+	_, err = e.w.WriteString("\n")
+	if err != nil {
+		errors = append(errors, err)
+	}
+
+	return errors
+}
+
 func (e *FileExecutor) Single(name string, statement string) error {
 	/* write comment */
-	_, err := e.w.WriteString(fmt.Sprintf("-- %v", name))
+	_, err := e.w.WriteString(fmt.Sprintf("-- %v\n", name))
 	if err != nil {
 		return err
 	}

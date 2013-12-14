@@ -12,6 +12,7 @@ type Executor interface {
 	io.Closer
 
 	Transaction(name string, statements []string) error
+	Multiple(name string, statements []string) []error
 	Single(name string, statement string) error
 
 	/* for e.g. PostgreSQL COPY support */

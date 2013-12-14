@@ -19,6 +19,7 @@ type Config struct {
 	Destination  *DestinationConfig           `yaml:"destination,omitempty"`
 	Views        map[string]string            `yaml:"views,omitempty"`
 	Tables       map[string]map[string]string `yaml:"tables,omitempty"`
+	TableMap     map[string]string            `yaml:"table_map,omitempty"`
 	SuppressData bool                         `yaml:"supress_data"`
 	SuppressDdl  bool                         `yaml:"supress_ddl"`
 	Truncate     bool                         `yaml:"force_truncate"`

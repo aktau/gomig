@@ -17,6 +17,32 @@ func NewDbExecutor(db *sql.DB) (*DbExecutor, error) {
 	return &DbExecutor{db}, nil
 }
 
+func (e *DbExecutor) Multiple(name string, statements []string) []error {
+	errors := make([]error, 0, len(statements))
+
+	if DBEXEC_VERBOSE {
+		log.Printf("DbExecutor: starting multiple statements: %v", name)
+	}
+
+	/* write out all statements, rollback in case of error */
+	for _, stmt := range statements {
+		if DBEXEC_VERBOSE {
+			log.Println(stmt)
+		}
+
+		_, err := e.db.Exec(stmt)
+		if err != nil {
+			if DBEXEC_VERBOSE {
+				log.Printf("DbExecutor: error while executing: %v", err)
+			}
+
+			errors = append(errors, err)
+		}
+	}
+
+	return errors
+}
+
 func (e *DbExecutor) Transaction(name string, statements []string) error {
 	if DBEXEC_VERBOSE {
 		log.Printf("DbExecutor: starting transaction: %v", name)

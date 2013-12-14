@@ -26,7 +26,7 @@ func createViews(r common.Reader, views map[string]string) *tempViews {
 func (t *tempViews) Create() {
 	for name, body := range t.views {
 		if VERBOSE {
-			log.Printf("creating view '%v' with body\n\t%v\n", name, body)
+			log.Printf("converter: creating view '%v' with body\n%v\n", name, body)
 		}
 
 		err := t.r.CreateView(name, body)
@@ -38,6 +38,10 @@ func (t *tempViews) Create() {
 
 func (t *tempViews) Erase() {
 	for name, _ := range t.views {
+		if VERBOSE {
+			log.Printf("converter: dropping view '%v'\n", name)
+		}
+
 		err := t.r.DropView(name)
 		if err != nil {
 			log.Println("converter: error while creating view", name, err)
@@ -64,8 +68,15 @@ func Convert(r common.ReadCloser, w common.WriteCloser, options *Config) error {
 	}
 	if !options.SuppressData {
 		if options.Merge {
-			for _, table := range tables {
-				w.MergeTable(table, r)
+			for _, srcTable := range tables {
+				if VERBOSE {
+					log.Println("converter: merging table", srcTable.Name)
+				}
+				dstTableName := strmap(srcTable.Name, options.TableMap)
+				err := w.MergeTable(srcTable, dstTableName, r)
+				if err != nil {
+					return err
+				}
 			}
 		} else {
 			writeData(tables, w)
@@ -76,6 +87,18 @@ func Convert(r common.ReadCloser, w common.WriteCloser, options *Config) error {
 	createConstraints(tables, w)
 
 	return nil
+}
+
+func strmap(srcname string, m map[string]string) string {
+	if m == nil {
+		return srcname
+	}
+	mapped, ok := m[srcname]
+	if !ok {
+		return srcname
+	}
+
+	return mapped
 }
 
 func createTables(tables []*common.Table, w common.Writer) error {
