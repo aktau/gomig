@@ -26,8 +26,6 @@ func main() {
 	defer reader.Close()
 	log.Println("gomig: succesfully connected to source")
 
-	fmt.Println("ALL TABLES: ", reader.TableNames())
-
 	/* open destination */
 	log.Println("gomig: connecting to destination", conf.Destination)
 	var writer common.WriteCloser

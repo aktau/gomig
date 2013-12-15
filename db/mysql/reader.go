@@ -9,7 +9,7 @@ import (
 )
 
 var (
-	READER_VERBOSE = true
+	READER_VERBOSE = false
 )
 
 type MysqlReader struct {

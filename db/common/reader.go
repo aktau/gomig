@@ -21,7 +21,6 @@ type Reader interface {
 	FilteredTables(incl, excl map[string]bool) []*Table
 
 	Read(table *Table) (*sql.Rows, error)
-	/* ReadAll() map[string][]interface{} */
 	CreateView(name string, body string) error
 	DropView(name string) error
 

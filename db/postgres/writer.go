@@ -59,7 +59,7 @@ func (w *genericPostgresWriter) MergeTable(src *Table, dstName string, r Reader)
 		fmt.Sprintf("CREATE TEMPORARY TABLE %v (\n\t%v\n)\nON COMMIT DROP;\n", tmpName, ColumnsSql(src)))
 
 	if PG_W_VERBOSE {
-		log.Println("MergeTable: preparing to read values")
+		log.Println("postgres: preparing to read values from source db")
 	}
 
 	/* bulk insert values */
@@ -70,7 +70,7 @@ func (w *genericPostgresWriter) MergeTable(src *Table, dstName string, r Reader)
 	defer rows.Close()
 
 	if PG_W_VERBOSE {
-		log.Println("MergeTable: query done, scanning rows...")
+		log.Print("postgres: query done, scanning rows...")
 	}
 
 	/* an alternate way to do this, with type assertions
@@ -83,13 +83,9 @@ func (w *genericPostgresWriter) MergeTable(src *Table, dstName string, r Reader)
 	stringrep := make([]string, 0, len(src.Columns))
 	insertLines := make([]string, 0, 32)
 	for rows.Next() {
-		if PG_W_VERBOSE {
-			log.Println("MergeTable: inside a loop, copying number of values:", len(src.Columns))
-		}
-
 		err := rows.Scan(pointers...)
 		if err != nil {
-			log.Println("MergeTable: error while reading from source:", err)
+			log.Println("postgres: error while reading from source:", err)
 			return err
 		}
 
@@ -133,9 +129,14 @@ func (w *genericPostgresWriter) MergeTable(src *Table, dstName string, r Reader)
 	if err != nil {
 		return err
 	}
+
 	if len(insertLines) > 0 {
 		stmts = append(stmts, fmt.Sprintf("INSERT INTO %v VALUES\n\t%v;\n",
 			tmpName, strings.Join(insertLines, ",\n\t")))
+	}
+
+	if PG_W_VERBOSE {
+		log.Print("postgres: rowscan done, creating merge statements")
 	}
 
 	/* analyze the temp table, for performance */
@@ -180,6 +181,10 @@ LEFT OUTER JOIN %[1]v AS dst ON (
 )
 WHERE  %[6]v;
 `, dstName, tmpName, strings.Join(colnames, ", "), srccolPart, pkWherePart, pkIsNullPart))
+
+	if PG_W_VERBOSE {
+		log.Print("postgres: statements completed, executing transaction")
+	}
 
 	err = w.e.Transaction(
 		fmt.Sprintf("merge table %v into table %v", src.Name, dstName), stmts)

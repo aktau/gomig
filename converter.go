@@ -24,7 +24,7 @@ func createTempEntities(r common.Reader, views map[string]string, projections ma
 func (t *tempEntities) Create() {
 	for name, body := range t.views {
 		if VERBOSE {
-			log.Printf("converter: creating view '%v' with body\n%v\n", name, body)
+			log.Printf("converter: creating view '%v'\n", name)
 		}
 
 		err := t.r.CreateView(name, body)
@@ -35,12 +35,12 @@ func (t *tempEntities) Create() {
 
 	for name, proj := range t.projections {
 		if VERBOSE {
-			log.Printf("converter: creating projection '%v' with body\n%v\n and primary key %v", name, proj.Body, proj.Pk)
+			log.Printf("converter: creating projection '%v'\n", name)
 		}
 
 		err := t.r.CreateProjection(name, proj.Body, proj.Engine, proj.Pk, nil)
 		if err != nil {
-			log.Println("converter: error while creating projection", name, proj.Body, err)
+			log.Println("converter: error while creating projection", name, proj.Body, proj.Pk, err)
 		}
 	}
 }
