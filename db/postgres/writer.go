@@ -19,6 +19,30 @@ var (
 	}
 )
 
+const (
+	explainQuery = `
+SELECT col.column_name AS field,
+       CASE
+        WHEN col.character_maximum_length IS NOT NULL THEN col.data_type || '(' || col.character_maximum_length || ')'
+        ELSE col.data_type
+       END AS type,
+       col.is_nullable AS null,
+       CASE
+        WHEN tc.constraint_type = 'PRIMARY KEY' THEN 'PRI'
+        ELSE ''
+       END AS key,
+       '' AS default,
+       '' AS extra
+       --kcu.constraint_name AS constraint_name
+       --kcu.*,
+       --tc.*
+FROM   information_schema.columns col
+LEFT JOIN   information_schema.key_column_usage kcu ON (kcu.table_name = col.table_name AND kcu.column_name = col.column_name)
+LEFT JOIN   information_schema.table_constraints AS tc ON (kcu.constraint_name = tc.constraint_name)
+WHERE  col.table_name = '%v'
+ORDER BY col.ordinal_position;`
+)
+
 type genericPostgresWriter struct {
 	e               Executor
 	insertBulkLimit int

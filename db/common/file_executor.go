@@ -2,6 +2,7 @@ package common
 
 import (
 	"bufio"
+	"database/sql"
 	"fmt"
 	"os"
 )
@@ -88,6 +89,10 @@ func (e *FileExecutor) Single(name string, statement string) error {
 
 func (e *FileExecutor) HasCapability(capability int) bool {
 	return false
+}
+
+func (e *FileExecutor) GetDb() *sql.DB {
+	return nil
 }
 
 func (e *FileExecutor) Close() error {

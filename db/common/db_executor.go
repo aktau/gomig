@@ -88,6 +88,10 @@ func (e *DbExecutor) HasCapability(capability int) bool {
 	return false
 }
 
+func (e *DbExecutor) GetDb() *sql.DB {
+	return e.db
+}
+
 /* warning: closes the db connection that was passed to the constructor */
 func (e *DbExecutor) Close() error {
 	return e.db.Close()

@@ -1,6 +1,7 @@
 package common
 
 import (
+	"database/sql"
 	"io"
 )
 
@@ -17,4 +18,7 @@ type Executor interface {
 
 	/* for e.g. PostgreSQL COPY support */
 	HasCapability(capability int) bool
+
+	/* will return the underlying sql.DB if it exists, otherwise nil */
+	GetDb() *sql.DB
 }
