@@ -256,5 +256,16 @@ func ColumnsSql(table *Table) string {
 		colSql = append(colSql, fmt.Sprintf("%v %v", col.Name, PostgresType(col.Type)))
 	}
 
+	pkCols := make([]string, 0, len(table.Columns))
+	for _, col := range table.Columns {
+		if col.PrimaryKey {
+			pkCols = append(pkCols, col.Name)
+		}
+	}
+
+	/* add the primary key */
+	colSql = append(colSql, fmt.Sprintf("PRIMARY KEY (%v)",
+		strings.Join(pkCols, ", ")))
+
 	return strings.Join(colSql, ",\n\t")
 }
