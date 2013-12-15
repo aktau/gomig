@@ -123,7 +123,7 @@ func (w *genericPostgresWriter) MergeTable(src *Table, dstName string, r Reader)
 
 		if len(insertLines) > w.insertBulkLimit {
 			stmts = append(stmts, fmt.Sprintf("INSERT INTO %v VALUES\n\t%v;\n",
-				tmpName, strings.Join(insertLines, "\n\t")))
+				tmpName, strings.Join(insertLines, ",\n\t")))
 
 			insertLines = insertLines[:0]
 		}
@@ -135,7 +135,7 @@ func (w *genericPostgresWriter) MergeTable(src *Table, dstName string, r Reader)
 	}
 	if len(insertLines) > 0 {
 		stmts = append(stmts, fmt.Sprintf("INSERT INTO %v VALUES\n\t%v;\n",
-			tmpName, strings.Join(insertLines, "\n\t")))
+			tmpName, strings.Join(insertLines, ",\n\t")))
 	}
 
 	/* analyze the temp table, for performance */
