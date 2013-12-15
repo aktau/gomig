@@ -146,18 +146,21 @@ func (w *genericPostgresWriter) MergeTable(src *Table, dstName string, r Reader)
 
 	colnames := make([]string, 0, len(src.Columns))
 	srccol := make([]string, 0, len(src.Columns))
-	pkwhere := make([]string, 0, len(src.Columns))
+	pkWhere := make([]string, 0, len(src.Columns))
+	pkIsNull := make([]string, 0, len(src.Columns))
 	colassign := make([]string, 0, len(src.Columns))
 	for _, col := range src.Columns {
 		colnames = append(colnames, col.Name)
 		srccol = append(srccol, "src."+col.Name)
 		if col.PrimaryKey {
-			pkwhere = append(pkwhere, fmt.Sprintf("dst.%v[1] = src.%v[1]", col.Name))
+			pkWhere = append(pkWhere, fmt.Sprintf("dst.%[1]v = src.%[1]v", col.Name))
+			pkIsNull = append(pkIsNull, fmt.Sprintf("dst.%[1]v IS NULL", col.Name))
 		} else {
 			colassign = append(colassign, fmt.Sprintf("dst.%[1]v = src.%[1]v", col.Name))
 		}
 	}
-	pkwherePart := strings.Join(pkwhere, "\nAND    ")
+	pkWherePart := strings.Join(pkWhere, "\nAND    ")
+	pkIsNullPart := strings.Join(pkIsNull, "\nAND    ")
 	srccolPart := strings.Join(srccol, ",\n       ")
 
 	/* UPDATE from temp table to target table based on PK */
@@ -165,7 +168,7 @@ func (w *genericPostgresWriter) MergeTable(src *Table, dstName string, r Reader)
 UPDATE %v AS dst
 SET    %v
 FROM   %v AS src
-WHERE  %v;`, dstName, strings.Join(colassign, ",\n       "), tmpName, pkwherePart))
+WHERE  %v;`, dstName, strings.Join(colassign, ",\n       "), tmpName, pkWherePart))
 
 	/* INSERT from temp table to target table based on PK */
 	stmts = append(stmts, fmt.Sprintf(`
@@ -175,8 +178,8 @@ FROM   %[2]v AS src
 LEFT OUTER JOIN %[1]v AS dst ON (
 	   %[5]v
 )
-WHERE  dst.id IS NULL;
-`, dstName, tmpName, strings.Join(colnames, ", "), srccolPart, pkwherePart))
+WHERE  %[6]v;
+`, dstName, tmpName, strings.Join(colnames, ", "), srccolPart, pkWherePart, pkIsNullPart))
 
 	err = w.e.Transaction(
 		fmt.Sprintf("merge table %v into table %v", src.Name, dstName), stmts)

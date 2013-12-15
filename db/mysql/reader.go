@@ -9,7 +9,7 @@ import (
 )
 
 var (
-	READER_VERBOSE = false
+	READER_VERBOSE = true
 )
 
 type MysqlReader struct {
@@ -61,11 +61,15 @@ func (r *MysqlReader) FilteredTables(incl, excl map[string]bool) []*Table {
 	filteredTableNames := FilterInclExcl(tableNames, incl, excl)
 	tables := make([]*Table, 0, len(filteredTableNames))
 
+	if READER_VERBOSE {
+		log.Printf("mysql: all tables = %v, filtered = %v\n", tableNames, filteredTableNames)
+	}
+
 	for _, tableName := range filteredTableNames {
 		/* query table information */
 		columns, err := r.columns(tableName)
 		if err != nil {
-			log.Println("MysqlReader: could not fetch columns of table", tableName, "error:", err)
+			log.Println("mysql: could not fetch columns of table", tableName, "error:", err)
 		}
 
 		/* create table struct */
@@ -180,8 +184,7 @@ func (r *MysqlReader) DropView(name string) error {
 	return err
 }
 
-/* we'll use temporary tables here, which means DropProjection is almost
- * useless */
+/* can't use temporary tables, as they don't appear in SHOW TABLES output */
 func (r *MysqlReader) CreateProjection(name string, body string, pk []string, uks [][]string) error {
 	var createPk string
 	if len(pk) > 0 {
@@ -189,7 +192,7 @@ func (r *MysqlReader) CreateProjection(name string, body string, pk []string, uk
 	} else {
 		createPk = ""
 	}
-	stmt := fmt.Sprintf("CREATE TEMPORARY TABLE %v%v AS (\n%v\n);", name, createPk, body)
+	stmt := fmt.Sprintf("CREATE TABLE %v%v AS (\n%v\n);", name, createPk, body)
 
 	if READER_VERBOSE {
 		log.Printf("mysql: creating projection:\n%v\n", stmt)
