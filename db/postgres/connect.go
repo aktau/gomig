@@ -5,21 +5,37 @@ import (
 	"fmt"
 	. "github.com/aktau/gomig/db/common"
 	_ "github.com/lib/pq"
+	"strings"
 )
 
 func openDB(conf *Config) (*sql.DB, error) {
-	address := conf.Socket
-	if address == "" {
+	params := make([]string, 0, 4)
+
+	if conf.Username != "" {
+		params = append(params, "user="+conf.Username)
+	}
+	if conf.Password != "" {
+		params = append(params, fmt.Sprintf("password='%v'", conf.Password))
+	}
+	if conf.Socket != "" {
+		params = append(params, fmt.Sprintf("host='%v'", conf.Socket))
+		params = append(params, "sslmode=disable")
+	} else {
 		port := 3306
 		if conf.Port != 0 {
 			port = conf.Port
 		}
-		address = fmt.Sprintf("%v:%v", conf.Hostname, port)
+
+		params = append(params, fmt.Sprintf("host='%v'", conf.Hostname))
+		params = append(params, fmt.Sprintf("port=%v", port))
+	}
+	if conf.Database != "" {
+		params = append(params, "dbname="+conf.Database)
 	}
 
-	uri := fmt.Sprintf("%v:%v@%v/%v", conf.Username, conf.Password,
-		address, conf.Database)
-	db, err := sql.Open("mysql", uri)
+	uri := strings.Join(params, " ")
+	fmt.Println("connecting to PostgreSQL with string:", uri)
+	db, err := sql.Open("postgres", uri)
 	if err != nil {
 		return nil, err
 	}
