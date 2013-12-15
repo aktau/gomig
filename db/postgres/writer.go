@@ -49,6 +49,8 @@ func (w *genericPostgresWriter) MergeTable(src *Table, dstName string, r Reader)
 		log.Println("MergeTable: query done, scanning rows...")
 	}
 
+	/* an alternate way to do this, with type assertions
+	 * but possibly less accurately: http://go-database-sql.org/varcols.html */
 	pointers := make([]interface{}, len(src.Columns))
 	containers := make([]sql.RawBytes, len(src.Columns))
 	for i, _ := range pointers {
@@ -118,22 +120,39 @@ func (w *genericPostgresWriter) MergeTable(src *Table, dstName string, r Reader)
 	/* lock the target table */
 	stmts = append(stmts, fmt.Sprintf("LOCK TABLE %v IN EXCLUSIVE MODE;", dstName))
 
+	colnames := make([]string, 0, len(src.Columns))
+	srccol := make([]string, 0, len(src.Columns))
+	pkwhere := make([]string, 0, len(src.Columns))
+	colassign := make([]string, 0, len(src.Columns))
+	for _, col := range src.Columns {
+		colnames = append(colnames, col.Name)
+		srccol = append(srccol, "src."+col.Name)
+		if col.PrimaryKey {
+			pkwhere = append(pkwhere, fmt.Sprintf("dst.%v[1] = src.%v[1]", col.Name))
+		} else {
+			colassign = append(colassign, fmt.Sprintf("dst.%[1]v = src.%[1]v", col.Name))
+		}
+	}
+	pkwherePart := strings.Join(pkwhere, "\nAND    ")
+	srccolPart := strings.Join(srccol, ",\n       ")
+
 	/* UPDATE from temp table to target table based on PK */
 	stmts = append(stmts, fmt.Sprintf(`
-UPDATE %v
-SET    somedata = newvals.somedata
-FROM   %v
-WHERE  newvals.id = testtable.id;`, dstName, tmpName))
+UPDATE %v AS dst
+SET    %v
+FROM   %v AS src
+WHERE  %v;`, dstName, strings.Join(colassign, ",\n       "), tmpName, pkwherePart))
 
 	/* INSERT from temp table to target table based on PK */
 	stmts = append(stmts, fmt.Sprintf(`
-INSERT INTO %[1]v
-SELECT %[2]v.id,
-	   %[2]v.somedata
-FROM   %[2]v
-LEFT OUTER JOIN %[1]v ON (%[1]v.id = %[2]v.id)
-WHERE  %[1]v.id IS NULL;
-`, dstName, tmpName))
+INSERT INTO %[1]v (%[3]v)
+SELECT %[4]v
+FROM   %[2]v AS src
+LEFT OUTER JOIN %[1]v AS dst ON (
+	   %[5]v
+)
+WHERE  dst.id IS NULL;
+`, dstName, tmpName, strings.Join(colnames, ", "), srccolPart, pkwherePart))
 
 	err = w.e.Transaction(
 		fmt.Sprintf("merge table %v into table %v", src.Name, dstName), stmts)
