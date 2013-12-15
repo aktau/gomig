@@ -44,7 +44,7 @@ func (t *tempViews) Erase() {
 
 		err := t.r.DropView(name)
 		if err != nil {
-			log.Println("converter: error while creating view", name, err)
+			log.Println("converter: error while dropping view", name, err)
 		}
 	}
 }
