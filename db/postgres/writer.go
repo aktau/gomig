@@ -12,10 +12,10 @@ var PG_W_VERBOSE = true
 
 var (
 	postgresInit = []string{
-		"SET client_encoding = 'UTF8'",
-		"SET standard_conforming_strings = off",
-		"SET check_function_bodies = false",
-		"SET client_min_messages = warning",
+		"SET client_encoding = 'UTF8';",
+		"SET standard_conforming_strings = off;",
+		"SET check_function_bodies = false;",
+		"SET client_min_messages = warning;",
 	}
 )
 
@@ -156,7 +156,7 @@ func (w *genericPostgresWriter) MergeTable(src *Table, dstName string, r Reader)
 			pkWhere = append(pkWhere, fmt.Sprintf("dst.%[1]v = src.%[1]v", col.Name))
 			pkIsNull = append(pkIsNull, fmt.Sprintf("dst.%[1]v IS NULL", col.Name))
 		} else {
-			colassign = append(colassign, fmt.Sprintf("dst.%[1]v = src.%[1]v", col.Name))
+			colassign = append(colassign, fmt.Sprintf("%[1]v = src.%[1]v", col.Name))
 		}
 	}
 	pkWherePart := strings.Join(pkWhere, "\nAND    ")
