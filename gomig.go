@@ -8,7 +8,8 @@ import (
 )
 
 func main() {
-	fmt.Printf("Welcome to gomig v.%v.%v\n\n", GOMIG_MAJ_VERSION, GOMIG_MIN_VERSION)
+	fmt.Printf("Welcome to gomig v.%v.%v.%v\n\n",
+		GOMIG_MAJ_VERSION, GOMIG_MIN_VERSION, GOMIG_MIC_VERSION)
 
 	conf, err := LoadConfig("config.yml")
 	if err != nil {
