@@ -15,8 +15,9 @@ type DestinationConfig struct {
 }
 
 type ProjectionConfig struct {
-	Pk   []string `yaml:"pk"`
-	Body string   `yaml:"body"`
+	Pk     []string `yaml:"pk,omitempty"`
+	Body   string   `yaml:"body"`
+	Engine string   `yaml:"engine,omitempty"`
 }
 
 type Config struct {

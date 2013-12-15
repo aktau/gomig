@@ -25,7 +25,7 @@ type Reader interface {
 	CreateView(name string, body string) error
 	DropView(name string) error
 
-	CreateProjection(name string, body string, pk []string, uks [][]string) error
+	CreateProjection(name string, body string, engine string, pk []string, uks [][]string) error
 	DropProjection(name string) error
 }
 

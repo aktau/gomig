@@ -38,7 +38,7 @@ func (t *tempEntities) Create() {
 			log.Printf("converter: creating projection '%v' with body\n%v\n and primary key %v", name, proj.Body, proj.Pk)
 		}
 
-		err := t.r.CreateProjection(name, proj.Body, proj.Pk, nil)
+		err := t.r.CreateProjection(name, proj.Body, proj.Engine, proj.Pk, nil)
 		if err != nil {
 			log.Println("converter: error while creating projection", name, proj.Body, err)
 		}

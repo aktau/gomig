@@ -185,14 +185,20 @@ func (r *MysqlReader) DropView(name string) error {
 }
 
 /* can't use temporary tables, as they don't appear in SHOW TABLES output */
-func (r *MysqlReader) CreateProjection(name string, body string, pk []string, uks [][]string) error {
+func (r *MysqlReader) CreateProjection(name string, body string, engine string, pk []string, uks [][]string) error {
 	var createPk string
 	if len(pk) > 0 {
 		createPk = " ( " + "PRIMARY KEY (" + strings.Join(pk, ", ") + ")" + " )"
 	} else {
 		createPk = ""
 	}
-	stmt := fmt.Sprintf("CREATE TABLE %v%v AS (\n%v\n);", name, createPk, body)
+
+	var engineSQL string
+	if engine != "" {
+		engineSQL = " ENGINE=" + strings.ToUpper(engine)
+	}
+
+	stmt := fmt.Sprintf("CREATE TABLE %v%v%v AS (\n%v\n);", name, createPk, engineSQL, body)
 
 	if READER_VERBOSE {
 		log.Printf("mysql: creating projection:\n%v\n", stmt)
