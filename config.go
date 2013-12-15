@@ -14,10 +14,16 @@ type DestinationConfig struct {
 	Postgres *common.Config `yaml:"postgres,omitempty"`
 }
 
+type ProjectionConfig struct {
+	Pk   []string `yaml:"pk"`
+	Body string   `yaml:"body"`
+}
+
 type Config struct {
 	Mysql        *common.Config               `yaml:"mysql,omitempty"`
 	Destination  *DestinationConfig           `yaml:"destination,omitempty"`
 	Views        map[string]string            `yaml:"views,omitempty"`
+	Projections  map[string]ProjectionConfig  `yaml:"projections,omitempty"`
 	Tables       map[string]map[string]string `yaml:"tables,omitempty"`
 	TableMap     map[string]string            `yaml:"table_map,omitempty"`
 	SuppressData bool                         `yaml:"supress_data"`

@@ -9,21 +9,19 @@ var (
 	VERBOSE = true
 )
 
-type tempViews struct {
-	r     common.Reader
-	views map[string]string
+type tempEntities struct {
+	r           common.Reader
+	views       map[string]string
+	projections map[string]ProjectionConfig
 }
 
-func createViews(r common.Reader, views map[string]string) *tempViews {
-	t := &tempViews{r, views}
-
-	/* create all views */
+func createTempEntities(r common.Reader, views map[string]string, projections map[string]ProjectionConfig) *tempEntities {
+	t := &tempEntities{r, views, projections}
 	t.Create()
-
 	return t
 }
 
-func (t *tempViews) Create() {
+func (t *tempEntities) Create() {
 	for name, body := range t.views {
 		if VERBOSE {
 			log.Printf("converter: creating view '%v' with body\n%v\n", name, body)
@@ -34,9 +32,20 @@ func (t *tempViews) Create() {
 			log.Println("converter: error while creating view", name, body, err)
 		}
 	}
+
+	for name, proj := range t.projections {
+		if VERBOSE {
+			log.Printf("converter: creating projection '%v' with body\n%v\n and primary key %v", name, proj.Body, proj.Pk)
+		}
+
+		err := t.r.CreateProjection(name, proj.Body, proj.Pk, nil)
+		if err != nil {
+			log.Println("converter: error while creating projection", name, proj.Body, err)
+		}
+	}
 }
 
-func (t *tempViews) Erase() {
+func (t *tempEntities) Erase() {
 	for name, _ := range t.views {
 		if VERBOSE {
 			log.Printf("converter: dropping view '%v'\n", name)
@@ -47,16 +56,22 @@ func (t *tempViews) Erase() {
 			log.Println("converter: error while dropping view", name, err)
 		}
 	}
+
+	for name, _ := range t.projections {
+		if VERBOSE {
+			log.Printf("converter: dropping projection '%v'\n", name)
+		}
+
+		err := t.r.DropProjection(name)
+		if err != nil {
+			log.Println("converter: error while dropping projection", name, err)
+		}
+	}
 }
 
 func Convert(r common.ReadCloser, w common.WriteCloser, options *Config) error {
-	if len(options.Views) > 0 {
-		if VERBOSE {
-			log.Println("converter: creating views...")
-		}
-		tempViews := createViews(r, options.Views)
-		defer tempViews.Erase()
-	}
+	tempViews := createTempEntities(r, options.Views, options.Projections)
+	defer tempViews.Erase()
 
 	tables := r.FilteredTables(options.OnlyTables, options.ExcludeTables)
 

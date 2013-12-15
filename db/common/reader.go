@@ -24,6 +24,9 @@ type Reader interface {
 	/* ReadAll() map[string][]interface{} */
 	CreateView(name string, body string) error
 	DropView(name string) error
+
+	CreateProjection(name string, body string, pk []string, uks [][]string) error
+	DropProjection(name string) error
 }
 
 type ReadCloser interface {

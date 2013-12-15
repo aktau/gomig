@@ -8,6 +8,10 @@ import (
 	"strings"
 )
 
+var (
+	READER_VERBOSE = false
+)
+
 type MysqlReader struct {
 	*sql.DB
 }
@@ -171,6 +175,31 @@ func (r *MysqlReader) CreateView(name string, body string) error {
 
 func (r *MysqlReader) DropView(name string) error {
 	stmt := fmt.Sprintf("DROP VIEW %v;", name)
+
+	_, err := r.Exec(stmt)
+	return err
+}
+
+/* we'll use temporary tables here, which means DropProjection is almost
+ * useless */
+func (r *MysqlReader) CreateProjection(name string, body string, pk []string, uks [][]string) error {
+	var createPk string
+	if len(pk) > 0 {
+		createPk = " ( " + "PRIMARY KEY (" + strings.Join(pk, ", ") + ")" + " )"
+	} else {
+		createPk = ""
+	}
+	stmt := fmt.Sprintf("CREATE TEMPORARY TABLE %v%v AS (\n%v\n);", name, createPk, body)
+
+	if READER_VERBOSE {
+		log.Printf("mysql: creating projection:\n%v\n", stmt)
+	}
+	_, err := r.Exec(stmt)
+	return err
+}
+
+func (r *MysqlReader) DropProjection(name string) error {
+	stmt := fmt.Sprintf("DROP TABLE %v;", name)
 
 	_, err := r.Exec(stmt)
 	return err
