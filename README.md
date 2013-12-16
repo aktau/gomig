@@ -29,6 +29,13 @@ Requirements
 ===========
 - Go 1.2 (uses positional notation in fmt.Sprintf)
 
+Screenshot
+==========
+
+Everybody loves screenshots, even of console apps.
+
+![Fancy screenshot of gomig in action](http://aktau.github.io/gomig/images/screen-0.4.0-1.png)
+
 License (BSD)
 ======================
 
