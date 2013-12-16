@@ -50,9 +50,62 @@ type genericPostgresWriter struct {
 
 func (w *genericPostgresWriter) bulkTransfer(src *Table, dstName string, rows *sql.Rows) error {
 	ex := w.e
-	ex.BulkInit(dstName)
-	ex.BulkFinish()
-	return nil
+
+	colnames := make([]string, 0, len(src.Columns))
+	for _, col := range src.Columns {
+		colnames = append(colnames, col.Name)
+	}
+
+	err := ex.BulkInit(dstName, colnames...)
+	if err != nil {
+		return err
+	}
+
+	vals := make([]interface{}, len(src.Columns))
+	for i, col := range src.Columns {
+		switch col.Type {
+		case "boolean":
+			if col.Null {
+				vals[i] = new(sql.NullBool)
+			} else {
+				vals[i] = new(bool)
+			}
+		case "float":
+			if col.Null {
+				vals[i] = new(sql.NullFloat64)
+			} else {
+				vals[i] = new(float64)
+			}
+		case "integer":
+			if col.Null {
+				vals[i] = new(sql.NullInt64)
+			} else {
+				vals[i] = new(int64)
+			}
+		default:
+			if col.Null {
+				vals[i] = new(sql.NullString)
+			} else {
+				vals[i] = new(string)
+			}
+		}
+	}
+
+	for rows.Next() {
+		err := rows.Scan(vals...)
+		if err != nil {
+			log.Println("postgres: error while reading from source:", err)
+			return err
+		}
+
+		err = ex.BulkAddRecord(vals...)
+		if err != nil {
+			log.Println("postgres: error during bulk insert:", err)
+			return err
+		}
+	}
+
+	return ex.BulkFinish()
 }
 
 func (w *genericPostgresWriter) normalTransfer(src *Table, dstName string, rows *sql.Rows, linesPerStatement int) error {
@@ -118,8 +171,16 @@ func (w *genericPostgresWriter) transferTable(src *Table, dstName string, r Read
 	}
 
 	if w.e.HasCapability(CapBulkTransfer) {
+		if PG_W_VERBOSE {
+			log.Print("postgres: bulk capability detected, performing bulk transfer...")
+		}
+
 		err = w.bulkTransfer(src, dstName, rows)
 	} else {
+		if PG_W_VERBOSE {
+			log.Print("postgres: no bulk capability detected, performing normal transfer...")
+		}
+
 		err = w.normalTransfer(src, dstName, rows, w.insertBulkLimit)
 	}
 	if err != nil {
@@ -237,7 +298,7 @@ func NewPostgresWriter(conf *Config) (*PostgresWriter, error) {
 		return nil, err
 	}
 
-	executor, err := NewDbExecutor(db)
+	executor, err := NewPgDbExecutor(db)
 	if err != nil {
 		db.Close()
 		return nil, err

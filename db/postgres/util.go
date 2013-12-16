@@ -26,6 +26,8 @@ func RawToPostgres(val []byte, origType string) (string, error) {
 			}
 		case "integer":
 			return string(val), nil
+		case "float":
+			return string(val), nil
 		default:
 			return string(val), nil
 		}
