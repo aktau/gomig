@@ -21,4 +21,7 @@ _testmain.go
 
 *.exe
 
+# Project specific
 go-app
+*.sql
+config.yml
