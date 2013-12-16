@@ -52,11 +52,18 @@ type genericPostgresWriter struct {
  * http://stackoverflow.com/questions/17267417/how-do-i-do-an-upsert-merge-insert-on-duplicate-update-in-postgresq */
 func (w *genericPostgresWriter) MergeTable(src *Table, dstName string, r Reader) error {
 	tmpName := "gomig_tmp"
-	stmts := make([]string, 0, 5)
+
+	err := w.e.Begin(
+		fmt.Sprintf("merge table %v into table %v", src.Name, dstName))
+	if err != nil {
+		return err
+	}
 
 	/* create temporary table */
-	stmts = append(stmts,
-		fmt.Sprintf("CREATE TEMPORARY TABLE %v (\n\t%v\n)\nON COMMIT DROP;\n", tmpName, ColumnsSql(src)))
+	err = w.e.Submit(fmt.Sprintf("CREATE TEMPORARY TABLE %v (\n\t%v\n)\nON COMMIT DROP;\n", tmpName, ColumnsSql(src)))
+	if err != nil {
+		return err
+	}
 
 	if PG_W_VERBOSE {
 		log.Println("postgres: preparing to read values from source db")
@@ -118,8 +125,11 @@ func (w *genericPostgresWriter) MergeTable(src *Table, dstName string, r Reader)
 		stringrep = stringrep[:0]
 
 		if len(insertLines) > w.insertBulkLimit {
-			stmts = append(stmts, fmt.Sprintf("INSERT INTO %v VALUES\n\t%v;\n",
+			err = w.e.Submit(fmt.Sprintf("INSERT INTO %v VALUES\n\t%v;\n",
 				tmpName, strings.Join(insertLines, ",\n\t")))
+			if err != nil {
+				return err
+			}
 
 			insertLines = insertLines[:0]
 		}
@@ -131,8 +141,11 @@ func (w *genericPostgresWriter) MergeTable(src *Table, dstName string, r Reader)
 	}
 
 	if len(insertLines) > 0 {
-		stmts = append(stmts, fmt.Sprintf("INSERT INTO %v VALUES\n\t%v;\n",
+		err = w.e.Submit(fmt.Sprintf("INSERT INTO %v VALUES\n\t%v;\n",
 			tmpName, strings.Join(insertLines, ",\n\t")))
+		if err != nil {
+			return err
+		}
 	}
 
 	if PG_W_VERBOSE {
@@ -140,10 +153,16 @@ func (w *genericPostgresWriter) MergeTable(src *Table, dstName string, r Reader)
 	}
 
 	/* analyze the temp table, for performance */
-	stmts = append(stmts, fmt.Sprintf("ANALYZE %v;\n", tmpName))
+	err = w.e.Submit(fmt.Sprintf("ANALYZE %v;\n", tmpName))
+	if err != nil {
+		return err
+	}
 
 	/* lock the target table */
-	stmts = append(stmts, fmt.Sprintf("LOCK TABLE %v IN EXCLUSIVE MODE;", dstName))
+	err = w.e.Submit(fmt.Sprintf("LOCK TABLE %v IN EXCLUSIVE MODE;", dstName))
+	if err != nil {
+		return err
+	}
 
 	colnames := make([]string, 0, len(src.Columns))
 	srccol := make([]string, 0, len(src.Columns))
@@ -165,14 +184,17 @@ func (w *genericPostgresWriter) MergeTable(src *Table, dstName string, r Reader)
 	srccolPart := strings.Join(srccol, ",\n       ")
 
 	/* UPDATE from temp table to target table based on PK */
-	stmts = append(stmts, fmt.Sprintf(`
+	err = w.e.Submit(fmt.Sprintf(`
 UPDATE %v AS dst
 SET    %v
 FROM   %v AS src
 WHERE  %v;`, dstName, strings.Join(colassign, ",\n       "), tmpName, pkWherePart))
+	if err != nil {
+		return err
+	}
 
 	/* INSERT from temp table to target table based on PK */
-	stmts = append(stmts, fmt.Sprintf(`
+	err = w.e.Submit(fmt.Sprintf(`
 INSERT INTO %[1]v (%[3]v)
 SELECT %[4]v
 FROM   %[2]v AS src
@@ -181,13 +203,15 @@ LEFT OUTER JOIN %[1]v AS dst ON (
 )
 WHERE  %[6]v;
 `, dstName, tmpName, strings.Join(colnames, ", "), srccolPart, pkWherePart, pkIsNullPart))
+	if err != nil {
+		return err
+	}
 
 	if PG_W_VERBOSE {
 		log.Print("postgres: statements completed, executing transaction")
 	}
 
-	err = w.e.Transaction(
-		fmt.Sprintf("merge table %v into table %v", src.Name, dstName), stmts)
+	err = w.e.Commit()
 	return err
 }
 
