@@ -41,11 +41,23 @@ func (e *DbExecutor) Commit() error {
 	if e.tx == nil {
 		return ErrNoTxInProgress
 	}
+	defer func() { e.tx = nil }()
 
-	/* end transaction */
-	tx := e.tx
-	e.tx = nil
-	return tx.Commit()
+	return e.tx.Commit()
+}
+
+func (e *DbExecutor) Rollback() error {
+	if e.tx == nil {
+		return ErrNoTxInProgress
+	}
+	defer func() { e.tx = nil }()
+
+	rerr := e.tx.Rollback()
+	if rerr != nil && DBEXEC_VERBOSE {
+		log.Printf("DbExecutor: error while rolling back: %v", rerr)
+	}
+
+	return rerr
 }
 
 func (e *DbExecutor) submitSimple(stmt string) error {
@@ -54,13 +66,9 @@ func (e *DbExecutor) submitSimple(stmt string) error {
 }
 
 func (e *DbExecutor) submitTransactional(stmt string) error {
-	tx := e.tx
-	_, err := tx.Exec(stmt)
+	_, err := e.tx.Exec(stmt)
 	if err != nil {
-		rerr := tx.Rollback()
-		if rerr != nil && DBEXEC_VERBOSE {
-			log.Printf("DbExecutor: error while rolling back: %v", rerr)
-		}
+		e.Rollback()
 	}
 	return err
 }

@@ -60,6 +60,7 @@ func (w *genericPostgresWriter) bulkTransfer(src *Table, dstName string, rows *s
 	if err != nil {
 		return err
 	}
+	defer ex.BulkFinish()
 
 	vals := make([]interface{}, len(src.Columns))
 	for i, col := range src.Columns {
@@ -105,7 +106,7 @@ func (w *genericPostgresWriter) bulkTransfer(src *Table, dstName string, rows *s
 		}
 	}
 
-	return ex.BulkFinish()
+	return nil
 }
 
 func (w *genericPostgresWriter) normalTransfer(src *Table, dstName string, rows *sql.Rows, linesPerStatement int) error {
