@@ -118,7 +118,7 @@ func (e *DbExecutor) Single(name string, statement string) error {
 	return e.Submit(statement)
 }
 
-func (e *DbExecutor) BulkInit(table string) error {
+func (e *DbExecutor) BulkInit(table string, columns ...string) error {
 	return ErrCapNotSupported
 }
 
@@ -137,6 +137,10 @@ func (e *DbExecutor) HasCapability(capability int) bool {
 
 func (e *DbExecutor) GetDb() *sql.DB {
 	return e.db
+}
+
+func (e *DbExecutor) GetTx() *sql.Tx {
+	return e.tx
 }
 
 /* warning: closes the db connection that was passed to the constructor */

@@ -115,7 +115,7 @@ func (e *FileExecutor) Single(name string, statement string) error {
 	return err
 }
 
-func (e *FileExecutor) BulkInit(table string) error {
+func (e *FileExecutor) BulkInit(table string, columns ...string) error {
 	return ErrCapNotSupported
 }
 
@@ -132,6 +132,10 @@ func (e *FileExecutor) HasCapability(capability int) bool {
 }
 
 func (e *FileExecutor) GetDb() *sql.DB {
+	return nil
+}
+
+func (e *FileExecutor) GetTx() *sql.Tx {
 	return nil
 }
 

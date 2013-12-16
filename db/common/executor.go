@@ -31,7 +31,7 @@ type Executor interface {
 	/* bulk statements for copying large amounts of data, the underlying
 	 * implementation will try to use the most efficient way of achieving this,
 	 * for example postgres' COPY FROM semantics. */
-	BulkInit(table string) error
+	BulkInit(table string, columns ...string) error
 	BulkAddRecord(args ...interface{}) error
 	BulkFinish() error
 
@@ -49,4 +49,7 @@ type Executor interface {
 
 	/* will return the underlying sql.DB if it exists, otherwise nil */
 	GetDb() *sql.DB
+
+	/* will return the underlying sql.Tx if it exists, otherwise nil */
+	GetTx() *sql.Tx
 }
