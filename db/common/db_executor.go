@@ -11,10 +11,70 @@ var (
 
 type DbExecutor struct {
 	db *sql.DB
+	tx *sql.Tx
 }
 
 func NewDbExecutor(db *sql.DB) (*DbExecutor, error) {
-	return &DbExecutor{db}, nil
+	return &DbExecutor{db, nil}, nil
+}
+
+func (e *DbExecutor) Begin(name string) error {
+	if e.tx != nil {
+		return ErrTxInProgress
+	}
+
+	if DBEXEC_VERBOSE {
+		log.Printf("DbExecutor: starting transaction: %v", name)
+	}
+
+	/* start transaction */
+	tx, err := e.db.Begin()
+	if err != nil {
+		return nil
+	}
+
+	e.tx = tx
+	return nil
+}
+
+func (e *DbExecutor) Commit() error {
+	if e.tx == nil {
+		return ErrNoTxInProgress
+	}
+
+	/* end transaction */
+	tx := e.tx
+	e.tx = nil
+	return tx.Commit()
+}
+
+func (e *DbExecutor) submitSimple(stmt string) error {
+	_, err := e.db.Exec(stmt)
+	return err
+}
+
+func (e *DbExecutor) submitTransactional(stmt string) error {
+	tx := e.tx
+	_, err := tx.Exec(stmt)
+	if err != nil {
+		rerr := tx.Rollback()
+		if rerr != nil && DBEXEC_VERBOSE {
+			log.Printf("DbExecutor: error while rolling back: %v", rerr)
+		}
+	}
+	return err
+}
+
+func (e *DbExecutor) Submit(stmt string) error {
+	if DBEXEC_VERBOSE {
+		log.Println(stmt)
+	}
+
+	if e.tx == nil {
+		return e.submitSimple(stmt)
+	} else {
+		return e.submitTransactional(stmt)
+	}
 }
 
 func (e *DbExecutor) Multiple(name string, statements []string) []error {
@@ -26,16 +86,8 @@ func (e *DbExecutor) Multiple(name string, statements []string) []error {
 
 	/* write out all statements, rollback in case of error */
 	for _, stmt := range statements {
-		if DBEXEC_VERBOSE {
-			log.Println(stmt)
-		}
-
-		_, err := e.db.Exec(stmt)
+		err := e.Submit(stmt)
 		if err != nil {
-			if DBEXEC_VERBOSE {
-				log.Printf("DbExecutor: error while executing: %v", err)
-			}
-
 			errors = append(errors, err)
 		}
 	}
@@ -44,47 +96,42 @@ func (e *DbExecutor) Multiple(name string, statements []string) []error {
 }
 
 func (e *DbExecutor) Transaction(name string, statements []string) error {
-	if DBEXEC_VERBOSE {
-		log.Printf("DbExecutor: starting transaction: %v", name)
-	}
-
 	/* start transaction */
-	tx, err := e.db.Begin()
+	err := e.Begin(name)
 	if err != nil {
 		return err
 	}
 
 	/* write out all statements, rollback in case of error */
 	for _, stmt := range statements {
-		if DBEXEC_VERBOSE {
-			log.Println(stmt)
-		}
-
-		_, err := tx.Exec(stmt)
+		err := e.Submit(stmt)
 		if err != nil {
-			rerr := tx.Rollback()
-			if rerr != nil && DBEXEC_VERBOSE {
-				log.Printf("DbExecutor: error while rolling back: %v", rerr)
-			}
 			return err
 		}
 	}
 
 	/* end transaction */
-	return tx.Commit()
+	return e.Commit()
 }
 
 func (e *DbExecutor) Single(name string, statement string) error {
-	/* write comment */
-	if DBEXEC_VERBOSE {
-		log.Printf("DbExecutor: starting transaction: %v", name)
-	}
+	return e.Submit(statement)
+}
 
-	_, err := e.db.Exec(statement)
-	return err
+func (e *DbExecutor) BulkInit(table string) error {
+	return ErrCapNotSupported
+}
+
+func (e *DbExecutor) BulkAddRecord(args ...interface{}) error {
+	return ErrCapNotSupported
+}
+
+func (e *DbExecutor) BulkFinish() error {
+	return ErrCapNotSupported
 }
 
 func (e *DbExecutor) HasCapability(capability int) bool {
+	/* return capability == CapBulkTransfer */
 	return false
 }
 

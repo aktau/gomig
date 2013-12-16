@@ -16,6 +16,8 @@ const (
 type FileExecutor struct {
 	f *os.File
 	w *bufio.Writer
+
+	txInProgress bool
 }
 
 func NewFileExecutor(filename string) (*FileExecutor, error) {
@@ -24,10 +26,15 @@ func NewFileExecutor(filename string) (*FileExecutor, error) {
 		return nil, err
 	}
 
-	return &FileExecutor{fo, bufio.NewWriter(fo)}, nil
+	return &FileExecutor{fo, bufio.NewWriter(fo), false}, nil
 }
 
-func (e *FileExecutor) Transaction(name string, statements []string) error {
+func (e *FileExecutor) Begin(name string) error {
+	if e.txInProgress {
+		return ErrTxInProgress
+	}
+	e.txInProgress = true
+
 	/* write comment */
 	_, err := e.w.WriteString(fmt.Sprintf("-- %v\n", name))
 	if err != nil {
@@ -35,20 +42,41 @@ func (e *FileExecutor) Transaction(name string, statements []string) error {
 	}
 
 	/* start transaction */
-	e.w.WriteString(SBegin + ";\n\n")
+	_, err = e.w.WriteString(SBegin + ";\n\n")
+	return err
+}
+
+func (e *FileExecutor) Commit() error {
+	if !e.txInProgress {
+		return ErrNoTxInProgress
+	}
+	e.txInProgress = false
+
+	/* end transaction */
+	_, err := e.w.WriteString(SCommit + ";\n\n")
+	return err
+}
+
+func (e *FileExecutor) Submit(stmt string) error {
+	_, err := e.w.WriteString(stmt + "\n")
+	return err
+}
+
+func (e *FileExecutor) Transaction(name string, statements []string) error {
+	err := e.Begin(name)
+	if err != nil {
+		return err
+	}
 
 	/* write out all statements */
 	for _, stmt := range statements {
-		_, err := e.w.WriteString(stmt + "\n")
+		err := e.Submit(stmt)
 		if err != nil {
 			return err
 		}
 	}
 
-	/* end transaction */
-	e.w.WriteString(SCommit + ";\n\n")
-
-	return nil
+	return e.Commit()
 }
 
 func (e *FileExecutor) Multiple(name string, statements []string) []error {
@@ -62,7 +90,7 @@ func (e *FileExecutor) Multiple(name string, statements []string) []error {
 
 	/* write out all statements, rollback in case of error */
 	for _, stmt := range statements {
-		_, err := e.w.WriteString(stmt + "\n")
+		err := e.Submit(stmt)
 		if err != nil {
 			errors = append(errors, err)
 		}
@@ -85,6 +113,18 @@ func (e *FileExecutor) Single(name string, statement string) error {
 
 	_, err = e.w.WriteString(statement)
 	return err
+}
+
+func (e *FileExecutor) BulkInit(table string) error {
+	return ErrCapNotSupported
+}
+
+func (e *FileExecutor) BulkAddRecord(args ...interface{}) error {
+	return ErrCapNotSupported
+}
+
+func (e *FileExecutor) BulkFinish() error {
+	return ErrCapNotSupported
 }
 
 func (e *FileExecutor) HasCapability(capability int) bool {
