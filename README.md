@@ -24,10 +24,21 @@ Features
 - Can execute SQL directly on the destination server or output to a
   file, just like
   [py-mysql2pgsql](https://github.com/philipsoutham/py-mysql2pgsql/).
+- Will ROLLBACK when something goes wrong, leaving the destination
+  database intact. The source database is never INSERT/UPDATE/DELETE'ed,
+  only views or projection tables are created on request, they can be
+  safely dropped should they somehow survive culling.
 
 Requirements
 ===========
 - Go 1.2 (uses positional notation in fmt.Sprintf)
+
+Todo
+====
+- Possibly faster data migration with goroutines, as explained in [this
+  article](http://www.acloudtree.com/how-to-shove-data-into-postgres-using-goroutinesgophers-and-golang/).
+  Would need to make things quite a bit more threadsafe for that though,
+  or keep the goroutines internal to the bulk methods...
 
 Screenshot
 ==========
