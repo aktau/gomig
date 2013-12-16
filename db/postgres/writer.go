@@ -48,6 +48,88 @@ type genericPostgresWriter struct {
 	insertBulkLimit int
 }
 
+func (w *genericPostgresWriter) bulkTransfer(src *Table, dstName string, rows *sql.Rows) error {
+	ex := w.e
+	ex.BulkInit(dstName)
+	ex.BulkFinish()
+	return nil
+}
+
+func (w *genericPostgresWriter) normalTransfer(src *Table, dstName string, rows *sql.Rows, linesPerStatement int) error {
+	/* an alternate way to do this, with type assertions
+	 * but possibly less accurately: http://go-database-sql.org/varcols.html */
+	pointers := make([]interface{}, len(src.Columns))
+	containers := make([]sql.RawBytes, len(src.Columns))
+	for i, _ := range pointers {
+		pointers[i] = &containers[i]
+	}
+	stringrep := make([]string, 0, len(src.Columns))
+	insertLines := make([]string, 0, 32)
+	for rows.Next() {
+		err := rows.Scan(pointers...)
+		if err != nil {
+			log.Println("postgres: error while reading from source:", err)
+			return err
+		}
+
+		for idx, val := range containers {
+			str, err := RawToPostgres(val, src.Columns[idx].Type)
+			if err != nil {
+				return err
+			}
+			stringrep = append(stringrep, str)
+		}
+
+		insertLines = append(insertLines, "("+strings.Join(stringrep, ",")+")")
+		stringrep = stringrep[:0]
+
+		if len(insertLines) > w.insertBulkLimit {
+			err = w.e.Submit(fmt.Sprintf("INSERT INTO %v VALUES\n\t%v;\n",
+				dstName, strings.Join(insertLines, ",\n\t")))
+			if err != nil {
+				return err
+			}
+
+			insertLines = insertLines[:0]
+		}
+	}
+
+	if len(insertLines) > 0 {
+		err := w.e.Submit(fmt.Sprintf("INSERT INTO %v VALUES\n\t%v;\n",
+			dstName, strings.Join(insertLines, ",\n\t")))
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (w *genericPostgresWriter) transferTable(src *Table, dstName string, r Reader) error {
+	/* bulk insert values */
+	rows, err := r.Read(src)
+	if err != nil {
+		return err
+	}
+	defer rows.Close()
+
+	if PG_W_VERBOSE {
+		log.Print("postgres: query done, scanning rows...")
+	}
+
+	if w.e.HasCapability(CapBulkTransfer) {
+		err = w.bulkTransfer(src, dstName, rows)
+	} else {
+		err = w.normalTransfer(src, dstName, rows, w.insertBulkLimit)
+	}
+	if err != nil {
+		return err
+	}
+
+	err = rows.Err()
+	return err
+}
+
 /* how to do an UPSERT/MERGE in PostgreSQL
  * http://stackoverflow.com/questions/17267417/how-do-i-do-an-upsert-merge-insert-on-duplicate-update-in-postgresq */
 func (w *genericPostgresWriter) MergeTable(src *Table, dstName string, r Reader) error {
@@ -69,83 +151,9 @@ func (w *genericPostgresWriter) MergeTable(src *Table, dstName string, r Reader)
 		log.Println("postgres: preparing to read values from source db")
 	}
 
-	/* bulk insert values */
-	rows, err := r.Read(src)
+	err = w.transferTable(src, tmpName, r)
 	if err != nil {
 		return err
-	}
-	defer rows.Close()
-
-	if PG_W_VERBOSE {
-		log.Print("postgres: query done, scanning rows...")
-	}
-
-	/* an alternate way to do this, with type assertions
-	 * but possibly less accurately: http://go-database-sql.org/varcols.html */
-	pointers := make([]interface{}, len(src.Columns))
-	containers := make([]sql.RawBytes, len(src.Columns))
-	for i, _ := range pointers {
-		pointers[i] = &containers[i]
-	}
-	stringrep := make([]string, 0, len(src.Columns))
-	insertLines := make([]string, 0, 32)
-	for rows.Next() {
-		err := rows.Scan(pointers...)
-		if err != nil {
-			log.Println("postgres: error while reading from source:", err)
-			return err
-		}
-
-		for idx, val := range containers {
-			if val == nil {
-				stringrep = append(stringrep, "NULL")
-			} else {
-				switch src.Columns[idx].Type {
-				case "text":
-					stringrep = append(stringrep, "$$"+string(val)+"$$")
-				case "boolean":
-					/* ascii(48) = "0" and ascii(49) = "1" */
-					switch val[0] {
-					case 48:
-						stringrep = append(stringrep, "f")
-					case 49:
-						stringrep = append(stringrep, "t")
-					default:
-						return fmt.Errorf("writer: did not recognize bool value: string(%v) = %v, val[0] = %v", val, string(val), val[0])
-					}
-				case "integer":
-					stringrep = append(stringrep, string(val))
-				default:
-					stringrep = append(stringrep, string(val))
-				}
-			}
-		}
-
-		insertLines = append(insertLines, "("+strings.Join(stringrep, ",")+")")
-		stringrep = stringrep[:0]
-
-		if len(insertLines) > w.insertBulkLimit {
-			err = w.e.Submit(fmt.Sprintf("INSERT INTO %v VALUES\n\t%v;\n",
-				tmpName, strings.Join(insertLines, ",\n\t")))
-			if err != nil {
-				return err
-			}
-
-			insertLines = insertLines[:0]
-		}
-	}
-
-	err = rows.Err()
-	if err != nil {
-		return err
-	}
-
-	if len(insertLines) > 0 {
-		err = w.e.Submit(fmt.Sprintf("INSERT INTO %v VALUES\n\t%v;\n",
-			tmpName, strings.Join(insertLines, ",\n\t")))
-		if err != nil {
-			return err
-		}
 	}
 
 	if PG_W_VERBOSE {
