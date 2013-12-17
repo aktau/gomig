@@ -9,11 +9,11 @@ I've tried to keep it extensible, so with some help it should support
 Postgres to MySQL, MySQL to Mysql, Oracle to Postgres et cetera.  Pull
 requests welcome.
 
-At the moment this small commandline app is not very friendly yet. The
-config file is always called "config.yml", format is YAML, and the
-parameters are a strict superset of
+The default config file is called "config.yml", format is YAML,
+and the parameters are a strict superset of
 [py-mysql2pgsql](https://github.com/philipsoutham/py-mysql2pgsql/)'s
-configuration format.
+configuration format. If no config file is present on the first run, the
+sample config file will be installed in its place.
 
 Features
 ========
@@ -30,11 +30,14 @@ Features
   safely dropped should they somehow survive culling.
 
 Requirements
-===========
+============
 - Go 1.2 (uses positional notation in fmt.Sprintf)
 
 Todo
 ====
+- Convert more datatypes, and do it more accurately (only handles
+  varchar, text, boolean, integer at the moment, float and
+  dates/timestamps are in progress)
 - Possibly faster data migration with goroutines, as explained in [this
   article](http://www.acloudtree.com/how-to-shove-data-into-postgres-using-goroutinesgophers-and-golang/).
   Would need to make things quite a bit more threadsafe for that though,
