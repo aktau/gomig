@@ -59,7 +59,7 @@ func main() {
 
 	conf, err := LoadConfig(options.File, DEFAULT_CONFIG_PATH, SAMPLE_CONFIG_PATH)
 	if err != nil {
-		fmt.Print("error while loading config file, ", err)
+		fmt.Println("error while loading config file, ", err)
 		os.Exit(1)
 	}
 
