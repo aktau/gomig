@@ -69,7 +69,7 @@ func (t *tempEntities) Erase() {
 	}
 }
 
-func Convert(r common.ReadCloser, w common.WriteCloser, options *Config) error {
+func Convert(r common.ReadCloser, w common.WriteCloser, options *Config, verbosity int) error {
 	tempViews := createTempEntities(r, options.Views, options.Projections)
 	defer tempViews.Erase()
 

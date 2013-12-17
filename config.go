@@ -7,8 +7,6 @@ import (
 	"launchpad.net/goyaml"
 )
 
-/* type Config map[string]interface{} */
-
 type DestinationConfig struct {
 	File     string         `yaml:"file,omitempty"`
 	Postgres *common.Config `yaml:"postgres,omitempty"`
@@ -40,7 +38,21 @@ type Config struct {
 	PrivExcludeTables []string        `yaml:"exclude_tables,omitempty"`
 }
 
-func LoadConfig(file string) (*Config, error) {
+func LoadConfig(file string, default_path string, sample_path string) (*Config, error) {
+	if !FileExists(file) {
+		if file == default_path {
+			_, err := CopyFile(sample_path, default_path)
+			if err != nil {
+				fmt.Printf("error while copying default %v to %v: %v\n",
+					sample_path, default_path, err)
+			} else {
+				return nil, fmt.Errorf("the default config file has been placed in the current directory (%v), please edit it first, then try to re-run the program.\n", DEFAULT_CONFIG_PATH)
+			}
+		}
+
+		return nil, fmt.Errorf("configuration file (%v) does not exist", file)
+	}
+
 	yml, err := ioutil.ReadFile(file)
 	if err != nil {
 		return nil, err
@@ -73,15 +85,15 @@ func stringSliceToSet(sl []string) map[string]bool {
 
 func (c *Config) Validate() error {
 	if c.Mysql == nil {
-		return fmt.Errorf("config: mysql section of config not present")
+		return fmt.Errorf("mysql section of config not present")
 	}
 
 	if c.Destination == nil {
-		return fmt.Errorf("config: destination section of config not present or complete, %v", c)
+		return fmt.Errorf("destination section of config not present or complete, %v", c)
 	}
 
 	if c.Destination.File == "" && c.Destination.Postgres == nil {
-		return fmt.Errorf("config: either file or postgres has to be specified in the destination field", c)
+		return fmt.Errorf("either file or postgres has to be specified in the destination field of the config file", c)
 	}
 
 	return nil
