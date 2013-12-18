@@ -19,7 +19,7 @@ Features
 ========
 - Uses postgres' **COPY FROM** support for fast data transfers
 - Define projections (views) in the source database so that they match a
-  (reduced) form of tables in the destination database. **gomig** will
+  (reduced) form of tables in the destination database. **Gomig** will
   sync the data.
 - Can execute SQL directly on the destination server or output to a
   file, just like
@@ -35,9 +35,9 @@ Requirements
 
 Todo
 ====
-- Convert more datatypes, and do it more accurately (only handles
-  varchar, text, boolean, integer at the moment, float and
-  dates/timestamps are in progress)
+- Convert more datatypes, and do it more accurately. **Gomig** only
+  handles varchar, text, blob (binary), boolean, integer and float at
+  the moment. Dates/timestamps are in progress.
 - Possibly faster data migration with goroutines, as explained in [this
   article](http://www.acloudtree.com/how-to-shove-data-into-postgres-using-goroutinesgophers-and-golang/).
   Would need to make things quite a bit more threadsafe for that though,
