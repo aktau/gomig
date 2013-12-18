@@ -3,5 +3,5 @@ package main
 const (
 	GOMIG_MAJ_VERSION = 0
 	GOMIG_MIN_VERSION = 4
-	GOMIG_MIC_VERSION = 2
+	GOMIG_MIC_VERSION = 3
 )
