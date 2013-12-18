@@ -64,14 +64,14 @@ func (w *genericPostgresWriter) bulkTransfer(src *Table, dstName string, rows *s
 
 	vals := make([]interface{}, len(src.Columns))
 	for i, col := range src.Columns {
-		switch col.Type {
+		switch col.Type.Name {
 		case "boolean":
 			if col.Null {
 				vals[i] = new(sql.NullBool)
 			} else {
 				vals[i] = new(bool)
 			}
-		case "float":
+		case "float", "double":
 			if col.Null {
 				vals[i] = new(sql.NullFloat64)
 			} else {
@@ -83,6 +83,10 @@ func (w *genericPostgresWriter) bulkTransfer(src *Table, dstName string, rows *s
 			} else {
 				vals[i] = new(int64)
 			}
+		case "blob":
+			/* do we have a suitable NullBlob or NullByte somewhere? I bet
+			 * this gives problems somehow with NULLable blob fields... */
+			vals[i] = new([]byte)
 		default:
 			if col.Null {
 				vals[i] = new(sql.NullString)
@@ -339,15 +343,11 @@ func NewPostgresFileWriter(filename string) (*PostgresFileWriter, error) {
 	return &PostgresFileWriter{genericPostgresWriter{executor, 256}}, err
 }
 
-func PostgresType(genericType string) string {
-	return genericType
-}
-
 func ColumnsSql(table *Table) string {
 	colSql := make([]string, 0, len(table.Columns))
 
 	for _, col := range table.Columns {
-		colSql = append(colSql, fmt.Sprintf("%v %v", col.Name, PostgresType(col.Type)))
+		colSql = append(colSql, fmt.Sprintf("%v %v", col.Name, GenericToPostgresType(col.Type)))
 	}
 
 	pkCols := make([]string, 0, len(table.Columns))

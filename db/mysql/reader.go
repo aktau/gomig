@@ -128,7 +128,7 @@ func (r *MysqlReader) processCol(table string, rc *rawCol) (*Column, error) {
 	return &Column{
 		TableName:    table,
 		Name:         rc.name,
-		Type:         r.normalizeType(t),
+		Type:         MysqlToGenericType(t),
 		RawType:      t,
 		Length:       length,
 		Null:         rc.null == "YES" || strings.HasPrefix(t, "enum") || t == "date" || t == "datetime" || t == "timestamp",
@@ -137,17 +137,6 @@ func (r *MysqlReader) processCol(table string, rc *rawCol) (*Column, error) {
 		Default:      rc.defval,
 		NeedsQuoting: strings.Contains(t, "text") || strings.Contains(t, "varchar"),
 	}, nil
-}
-
-func (r *MysqlReader) normalizeType(rt string) string {
-	switch {
-	case strings.Contains(rt, "char"), strings.Contains(rt, "text"):
-		return "text"
-	case rt == "bit(1)", rt == "tinyint(1)", rt == "tinyint(1) unsigned":
-		return "boolean"
-	default:
-		return "integer"
-	}
 }
 
 /* caller is responsible for cleaning up the sql.Rows object */

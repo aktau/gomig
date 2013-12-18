@@ -9,7 +9,7 @@ type Table struct {
 type Column struct {
 	TableName    string
 	Name         string
-	Type         string
+	Type         *Type
 	RawType      string
 	Length       int
 	Null         bool
