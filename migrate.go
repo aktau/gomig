@@ -24,7 +24,7 @@ func (x *MigrateCommand) Execute(args []string) error {
 		x.File = PATH_CONFIG_DEFAULT
 	}
 
-	conf, err := LoadConfig(x.File, DEFAULT_CONFIG_PATH, SAMPLE_CONFIG_PATH)
+	conf, err := LoadConfig(x.File)
 	if err != nil {
 		fmt.Printf("error while loading config file: '%v'\n", err)
 		fmt.Println("to generate a sample config file use the generate-config command")

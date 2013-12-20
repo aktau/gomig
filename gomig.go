@@ -5,11 +5,6 @@ import (
 	"os"
 )
 
-const (
-	DEFAULT_CONFIG_PATH = "config.yml"
-	SAMPLE_CONFIG_PATH  = "config.sample.yml"
-)
-
 type Options struct {
 	/* verbosity level */
 	Verbose []bool `short:"v" long:"verbose" description:"verbose output"`

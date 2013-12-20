@@ -38,7 +38,7 @@ type Config struct {
 	PrivExcludeTables []string        `yaml:"exclude_tables,omitempty"`
 }
 
-func LoadConfig(file string, default_path string, sample_path string) (*Config, error) {
+func LoadConfig(file string) (*Config, error) {
 	yml, err := ioutil.ReadFile(file)
 	if err != nil {
 		return nil, err
