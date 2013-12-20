@@ -29,8 +29,8 @@ Features
   only views or projection tables are created on request, they can be
   safely dropped should they somehow survive culling.
 
-Running
-=======
+Usage
+=====
 If you have the go runtime installed, then it's as easy as:
 
 ```bash
@@ -42,6 +42,21 @@ $ go get github.com/aktau/gomig
 
 # check out the options
 $ gomig --help
+# which prints something similar to:
+# Usage:
+#   gomig [OPTIONS]
+#
+# Application Options:
+#   -v, --verbose  verbose output
+#       --version  shows the program version and available backends
+#
+# Help Options:
+#   -h, --help     Show this help message
+#
+# Available commands:
+#   generate-config  Generate a sample config file in the current directory
+#   migrate          Migrate data from a source database to a destination file/database
+#   version          Print the version and supported backends
 
 # generate a config file, edit it, then run
 $ gomig generate-config
