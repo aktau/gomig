@@ -11,6 +11,14 @@ import (
 func MysqlToGenericType(mysqlType string) *Type {
 	rt := mysqlType
 	switch {
+	case rt == "set":
+		return SetType()
+	case rt == "date":
+		return DateType()
+	case rt == "time":
+		return TimeType()
+	case rt == "datetime", rt == "timestamp":
+		return TimestampType()
 	case strings.Contains(rt, "float"):
 		return FloatType()
 	case strings.Contains(rt, "double"):
@@ -18,8 +26,14 @@ func MysqlToGenericType(mysqlType string) *Type {
 	case strings.Contains(rt, "numeric"), strings.Contains(rt, "decimal"):
 		scale, precision := ExtractPrecisionAndScale(rt)
 		return NumericType(scale, precision)
-	case strings.Contains(rt, "int"):
-		return IntType()
+	case strings.Contains(rt, "tinyint"), rt == "smallint", rt == "year":
+		return IntType(TypeSmall)
+	case rt == "bigint", rt == "int unsigned":
+		return IntType(TypeLarge)
+	case rt == "bigint unsigned":
+		return IntType(TypeHuge)
+	case strings.Contains(rt, "int"), rt == "smallint unsigned":
+		return IntType(TypeNormal)
 	case strings.Contains(rt, "blob"), strings.Contains(rt, "binary"):
 		return BlobType()
 	case strings.HasPrefix(rt, "char"):
@@ -30,7 +44,9 @@ func MysqlToGenericType(mysqlType string) *Type {
 		t := TextType()
 		t.Max = ExtractLength(rt)
 		return t
-	case rt == "bit(1)", rt == "tinyint(1)", rt == "tinyint(1) unsigned":
+	case strings.HasPrefix(rt, "bit") && rt != "bit":
+		return BitType(ExtractLength(rt))
+	case rt == "bit", rt == "bit(1)", rt == "tinyint(1)", rt == "tinyint(1) unsigned":
 		return BoolType()
 	default:
 		log.Println("WARNING: mysql: encountered an unknown type, ", rt)

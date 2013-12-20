@@ -16,6 +16,7 @@ func GenericToPostgresType(genericType *common.Type) string {
 	max := gen.Max
 	precision := gen.Precision
 	scale := gen.Scale
+	modifier := gen.Modifier
 
 	switch name {
 	case "text":
@@ -35,8 +36,26 @@ func GenericToPostgresType(genericType *common.Type) string {
 		return "double precision"
 	case "numeric":
 		return fmt.Sprintf("numeric(%v, %v)", precision, scale)
+	case "bit":
+		return fmt.Sprintf("bit(%v)", max)
 	case "blob":
 		return "bytea"
+	case "integer":
+		switch modifier {
+		case common.TypeSmall:
+			return "smallint"
+		case common.TypeNormal:
+			return "integer"
+		case common.TypeLarge:
+			return "bigint"
+		case common.TypeHuge:
+			/* from: http://en.wikibooks.org/wiki/Converting_MySQL_to_PostgreSQL */
+			return "numeric(20)"
+		default:
+			return "integer"
+		}
+	case "set":
+		return "text[]"
 	default:
 		return name
 	}
