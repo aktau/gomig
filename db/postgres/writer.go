@@ -62,51 +62,19 @@ func (w *genericPostgresWriter) bulkTransfer(src *Table, dstName string, rows *s
 	}
 	defer ex.BulkFinish()
 
-	vals := make([]interface{}, len(src.Columns))
-	for i, col := range src.Columns {
-		switch col.Type.Name {
-		case "boolean":
-			if col.Null {
-				vals[i] = new(sql.NullBool)
-			} else {
-				vals[i] = new(bool)
-			}
-		case "float", "double":
-			if col.Null {
-				vals[i] = new(sql.NullFloat64)
-			} else {
-				vals[i] = new(float64)
-			}
-		case "integer":
-			if col.Null {
-				vals[i] = new(sql.NullInt64)
-			} else {
-				vals[i] = new(int64)
-			}
-		case "blob":
-			/* do we have a suitable NullBlob or NullByte somewhere? I bet
-			 * this gives problems somehow with NULLable blob fields... */
-			vals[i] = new([]byte)
-		default:
-			if col.Null {
-				vals[i] = new(sql.NullString)
-			} else {
-				vals[i] = new(string)
-			}
-		}
-	}
+	/* create a slice with the right types to extract into, and let the SQL
+	 * driver take care of the conversion */
+	vals := NewTypedSlice(src)
 
 	for rows.Next() {
 		err := rows.Scan(vals...)
 		if err != nil {
-			log.Println("postgres: error while reading from source:", err)
-			return err
+			return fmt.Errorf("postgres: error while reading from source:", err)
 		}
 
 		err = ex.BulkAddRecord(vals...)
 		if err != nil {
-			log.Println("postgres: error during bulk insert:", err)
-			return err
+			return fmt.Errorf("postgres: error during bulk insert:", err)
 		}
 	}
 
