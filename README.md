@@ -29,9 +29,42 @@ Features
   only views or projection tables are created on request, they can be
   safely dropped should they somehow survive culling.
 
-Requirements
-============
-- Go 1.2 (uses positional notation in fmt.Sprintf)
+Running
+=======
+If you have the go runtime installed, then it's as easy as:
+
+```bash
+# get it!
+$ go get github.com/aktau/gomig
+
+# run it (assuming $GOPATH is in your $PATH, as I assume it would be for
+# most Go devs, otherwise you'll have to cd to $GOPATH/bin)
+
+# check out the options
+$ gomig --help
+
+# generate a config file, edit it, then run
+$ gomig generate-config
+$ edit config.yml
+$ gomig
+# alternatively you can explicitly supply a config file:
+$ gomig -f config.yml
+```
+
+To update to the newest version later, you can just do:
+
+```bash
+$ go get -u github.com/aktau/gomig
+```
+
+Of course, with Go it's quite easy to just build binaries so that
+everyone can run it without needing anything but the standard C runtime
+(which is basically installed everywhere). But I'm not doing that just
+yet. I might do that if there's interest though.
+
+Build requirements
+==================
+- Go (>=) 1.2 (uses positional notation in fmt.Sprintf)
 
 Todo
 ====

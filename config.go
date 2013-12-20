@@ -39,20 +39,6 @@ type Config struct {
 }
 
 func LoadConfig(file string, default_path string, sample_path string) (*Config, error) {
-	if !FileExists(file) {
-		if file == default_path {
-			_, err := CopyFile(sample_path, default_path)
-			if err != nil {
-				fmt.Printf("error while copying default %v to %v: %v\n",
-					sample_path, default_path, err)
-			} else {
-				return nil, fmt.Errorf("the default config file has been placed in the current directory (%v), please edit it first, then try to re-run the program.\n", DEFAULT_CONFIG_PATH)
-			}
-		}
-
-		return nil, fmt.Errorf("configuration file (%v) does not exist", file)
-	}
-
 	yml, err := ioutil.ReadFile(file)
 	if err != nil {
 		return nil, err

@@ -1,4 +1,11 @@
-# rename this file to sample.yml and run the app when you're done
+package main
+
+import (
+	"fmt"
+	"io/ioutil"
+)
+
+const CONFIG_SAMPLE = `# edit this file and run the application when you're done
 
 # if a socket is specified we will use that
 # if tcp is chosen you can use compression
@@ -12,7 +19,8 @@ mysql:
  compress: false
 
 # if file is given, output goes to file, if postgres parameters
-# are given, output is executed straight on the db
+# are given, output is executed straight on the db, socket is
+# prioritized if specified.
 destination:
  # file: test.sql
  postgres:
@@ -21,7 +29,7 @@ destination:
    socket: /var/run/postgresql
    username:
    password:
-   database: m2d
+   database: somedb
 
 # projections can help you align data between the source and
 # destination databases, it's basically like a view (and used to be
@@ -38,7 +46,7 @@ projections:
          AND name IS NOT NULL
 
 
-# table `a` in the source database has been renamed to table `b`
+# table "a" in the source database has been renamed to table "b"
 # in the destination database
 table_map:
  pr_players: players
@@ -68,3 +76,37 @@ force_truncate: false
 
 # if timezone is true, forces to append/convert to UTC tzinfo mysql data
 timezone: false
+`
+
+type GenerateConfigCommand struct {
+	Force bool `short:"f" long:"force" description:"force config file overwrite"`
+}
+
+func (x *GenerateConfigCommand) Usage() string {
+	return " generate a fresh config file [add-OPTIONS]"
+}
+
+func (x *GenerateConfigCommand) Execute(args []string) error {
+	path := "config.yml"
+	if FileExists(path) && !x.Force {
+		return fmt.Errorf("File %v already exists, use the -f flag if you want to overwrite", path)
+	}
+
+	fmt.Printf("Generating config...")
+	err := ioutil.WriteFile("config.yml", []byte(CONFIG_SAMPLE), 0644)
+	if err != nil {
+		fmt.Println("ERROR")
+		return err
+	}
+
+	fmt.Println("DONE")
+	return nil
+}
+
+func init() {
+	var genconfig GenerateConfigCommand
+	parser.AddCommand("generate-config",
+		"Generate a sample config file in the current directory",
+		"Generate a sample config file in the current directory",
+		&genconfig)
+}
