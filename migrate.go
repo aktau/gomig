@@ -20,10 +20,6 @@ type MigrateCommand struct {
 func (x *MigrateCommand) Execute(args []string) error {
 	verbosity := len(options.Verbose)
 
-	if x.File == "" {
-		x.File = PATH_CONFIG_DEFAULT
-	}
-
 	conf, err := LoadConfig(x.File)
 	if err != nil {
 		fmt.Printf("error while loading config file: '%v'\n", err)
