@@ -13,7 +13,6 @@ const (
 type Options struct {
 	/* verbosity level */
 	Verbose []bool `short:"v" long:"verbose" description:"verbose output"`
-	Version bool   `long:"version" description:"shows the program version and available backends"`
 }
 
 var options Options

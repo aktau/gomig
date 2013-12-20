@@ -48,7 +48,6 @@ $ gomig --help
 #
 # Application Options:
 #   -v, --verbose  verbose output
-#       --version  shows the program version and available backends
 #
 # Help Options:
 #   -h, --help     Show this help message
