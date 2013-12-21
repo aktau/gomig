@@ -5,7 +5,6 @@ import (
 	"github.com/aktau/gomig/db"
 	"github.com/aktau/gomig/db/common"
 	"log"
-	"os"
 )
 
 const (
@@ -20,12 +19,7 @@ type MigrateCommand struct {
 func (x *MigrateCommand) Execute(args []string) error {
 	verbosity := len(options.Verbose)
 
-	conf, err := LoadConfig(x.File)
-	if err != nil {
-		fmt.Printf("error while loading config file: '%v'\n", err)
-		fmt.Println("to generate a sample config file use the generate-config command")
-		os.Exit(1)
-	}
+	conf := LoadConfigOrDie(x.File)
 
 	if verbosity > 2 {
 		fmt.Println("config:", conf)

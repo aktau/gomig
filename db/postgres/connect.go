@@ -34,7 +34,6 @@ func openDB(conf *Config) (*sql.DB, error) {
 	}
 
 	uri := strings.Join(params, " ")
-	fmt.Println("connecting to PostgreSQL with string:", uri)
 	db, err := sql.Open("postgres", uri)
 	if err != nil {
 		return nil, err
