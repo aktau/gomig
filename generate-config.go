@@ -82,10 +82,6 @@ type GenerateConfigCommand struct {
 	Force bool `short:"f" long:"force" description:"force config file overwrite"`
 }
 
-func (x *GenerateConfigCommand) Usage() string {
-	return " generate a fresh config file [add-OPTIONS]"
-}
-
 func (x *GenerateConfigCommand) Execute(args []string) error {
 	path := "config.yml"
 	if FileExists(path) && !x.Force {
