@@ -7,7 +7,7 @@ import (
 
 type Options struct {
 	/* verbosity level */
-	Verbose []bool `short:"v" long:"verbose" description:"verbose output"`
+	Verbose []bool `short:"v" long:"verbose" description:"Verbose output"`
 }
 
 var options Options
