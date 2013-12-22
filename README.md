@@ -85,22 +85,28 @@ Build requirements
 ==================
 - Go (>=) 1.2 (uses positional notation in fmt.Sprintf)
 
-Used libraries
-==============
-- [github.com/lib/pq](github.com/lib/pq) - MIT license
-- [github.com/go-sql-driver/mysql](github.com/go-sql-driver/mysql) - MPL v2 license
-- [github.com/jessevdk/go-flags](github.com/jessevdk/go-flags) - BSD license
-- [launchpad.net/goyaml](launchpad.net/goyaml) - LGPL v3 license
+Used libraries & software
+=========================
+| Package | Description | License |
+| --- | --- | --- |
+| [github.com/lib/pq](github.com/lib/pq) | Go database driver for postgres | MIT |
+| [github.com/go-sql-driver/mysql](github.com/go-sql-driver/mysql)| Go database driver for MySQL | MPL v2 |
+| [github.com/jessevdk/go-flags](github.com/jessevdk/go-flags) | Go package for cmdline flag parsing | BSD |
+| [launchpad.net/goyaml](launchpad.net/goyaml) | Go package for parsing/writing YAML | LGPL v3 |
 
 Todo
 ====
 - Convert more datatypes, and do it more accurately. **Gomig** only
   handles varchar, text, blob (binary), boolean, integer and float at
-  the moment. Dates/timestamps are in progress.
+  the moment. Dates, times and timestamps are implemented without
+  testing at the moment, so anyone who's interested should try it out.
 - Possibly faster data migration with goroutines, as explained in [this
   article](http://www.acloudtree.com/how-to-shove-data-into-postgres-using-goroutinesgophers-and-golang/).
   Would need to make things quite a bit more threadsafe for that though,
   or keep the goroutines internal to the bulk methods...
+- Testing! There are no tests yet, which is a shame.
+- Travis, when the tests are made, it would be nice to have Travis
+  automatically run them on each commit.
 
 Screenshot
 ==========
