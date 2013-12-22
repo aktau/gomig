@@ -42,12 +42,13 @@ $ go get github.com/aktau/gomig
 
 # check out the options
 $ gomig --help
+
 # which prints something similar to:
 # Usage:
-#   gomig [OPTIONS]
+#   go-app [OPTIONS]
 #
 # Application Options:
-#   -v, --verbose  verbose output
+#   -v, --verbose  Verbose output
 #
 # Help Options:
 #   -h, --help     Show this help message
@@ -55,14 +56,18 @@ $ gomig --help
 # Available commands:
 #   generate-config  Generate a sample config file in the current directory
 #   migrate          Migrate data from a source database to a destination file/database
+#   test             Test if a connection to the source and destination databases can be established
 #   version          Print the version and supported backends
 
 # generate a config file, edit it, then run
 $ gomig generate-config
 $ edit config.yml
-$ gomig
+# you can test if the connection succeeds if you want:
+$ gomig test
+# or you can go straight to running a migration
+$ gomig migrate
 # alternatively you can explicitly supply a config file:
-$ gomig -f config.yml
+$ gomig migrate -f config.yml
 ```
 
 To update to the newest version later, you can just do:
@@ -79,6 +84,13 @@ yet. I might do that if there's interest though.
 Build requirements
 ==================
 - Go (>=) 1.2 (uses positional notation in fmt.Sprintf)
+
+Used libraries
+==============
+- [github.com/lib/pq](github.com/lib/pq) - MIT license
+- [github.com/go-sql-driver/mysql](github.com/go-sql-driver/mysql) - MPL v2 license
+- [github.com/jessevdk/go-flags](github.com/jessevdk/go-flags) - BSD license
+- [launchpad.net/goyaml](launchpad.net/goyaml) - LGPL v3 license
 
 Todo
 ====
