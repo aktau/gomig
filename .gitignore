@@ -22,6 +22,7 @@ _testmain.go
 *.exe
 
 # Project specific
+gomig
 go-app
 *.sql
 config.yml
