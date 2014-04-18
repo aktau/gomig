@@ -26,3 +26,4 @@ gomig
 go-app
 *.sql
 config.yml
+config.*.yml
