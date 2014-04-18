@@ -48,7 +48,7 @@ type genericPostgresWriter struct {
 	insertBulkLimit int
 }
 
-func (w *genericPostgresWriter) bulkTransfer(src *Table, dstName string, rows *sql.Rows) error {
+func (w *genericPostgresWriter) bulkTransfer(src *Table, dstName string, rows *sql.Rows) (err error) {
 	ex := w.e
 
 	colnames := make([]string, 0, len(src.Columns))
@@ -56,29 +56,32 @@ func (w *genericPostgresWriter) bulkTransfer(src *Table, dstName string, rows *s
 		colnames = append(colnames, col.Name)
 	}
 
-	err := ex.BulkInit(dstName, colnames...)
-	if err != nil {
-		return err
+	if err = ex.BulkInit(dstName, colnames...); err != nil {
+		return
 	}
-	defer ex.BulkFinish()
+	defer func() {
+		berr := ex.BulkFinish()
+		if err == nil {
+			/* if there was no earlier error, set the one from BulkFinish */
+			err = berr
+		}
+	}()
 
 	/* create a slice with the right types to extract into, and let the SQL
 	 * driver take care of the conversion */
 	vals := NewTypedSlice(src)
 
 	for rows.Next() {
-		err := rows.Scan(vals...)
-		if err != nil {
+		if err = rows.Scan(vals...); err != nil {
 			return fmt.Errorf("postgres: error while reading from source:", err)
 		}
 
-		err = ex.BulkAddRecord(vals...)
-		if err != nil {
+		if err = ex.BulkAddRecord(vals...); err != nil {
 			return fmt.Errorf("postgres: error during bulk insert:", err)
 		}
 	}
 
-	return nil
+	return
 }
 
 func (w *genericPostgresWriter) normalTransfer(src *Table, dstName string, rows *sql.Rows, linesPerStatement int) error {
@@ -160,8 +163,7 @@ func (w *genericPostgresWriter) transferTable(src *Table, dstName string, r Read
 		return err
 	}
 
-	err = rows.Err()
-	return err
+	return rows.Err()
 }
 
 /* how to do an UPSERT/MERGE in PostgreSQL

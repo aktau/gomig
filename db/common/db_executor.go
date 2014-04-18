@@ -2,6 +2,7 @@ package common
 
 import (
 	"database/sql"
+	"fmt"
 	"log"
 )
 
@@ -61,16 +62,19 @@ func (e *DbExecutor) Rollback() error {
 }
 
 func (e *DbExecutor) submitSimple(stmt string) error {
-	_, err := e.db.Exec(stmt)
-	return err
+	if _, err := e.db.Exec(stmt); err != nil {
+		return fmt.Errorf("'%v' while executing statement\n'%v'", err, stmt)
+	}
+	return nil
 }
 
 func (e *DbExecutor) submitTransactional(stmt string) error {
 	_, err := e.tx.Exec(stmt)
 	if err != nil {
 		e.Rollback()
+		return fmt.Errorf("'%v' while executing statement\n'%v' in transaction", err, stmt)
 	}
-	return err
+	return nil
 }
 
 func (e *DbExecutor) Submit(stmt string) error {

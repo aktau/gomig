@@ -57,21 +57,21 @@ func (e *PgDbExecutor) BulkAddRecord(args ...interface{}) error {
 	return err
 }
 
-func (e *PgDbExecutor) BulkFinish() error {
+func (e *PgDbExecutor) BulkFinish() (err error) {
 	stmt := e.bulkStmt
-	defer func() { e.bulkStmt = nil }()
-
-	_, err := stmt.Exec()
-	if err != nil {
+	defer func() {
 		cerr := stmt.Close()
-		if cerr != nil {
+		if err == nil {
 			log.Println("pg_executor: could not properly close bulk statement", cerr)
+			err = cerr
 		}
-		return err
-	}
 
-	err = stmt.Close()
-	return err
+		/* make sure to reset the bulk statement */
+		e.bulkStmt = nil
+	}()
+
+	_, err = stmt.Exec()
+	return
 }
 
 func (e *PgDbExecutor) HasCapability(capability int) bool {
