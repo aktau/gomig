@@ -83,6 +83,8 @@ func RawToPostgres(val []byte, origType *common.Type) (string, error) {
 			}
 		case common.TypeNumeric, common.TypeInteger, common.TypeFloat, common.TypeDouble:
 			return string(val), nil
+		case common.TypeTimeStamp, common.TypeTime, common.TypeDate:
+			return "'" + string(val) + "'", nil
 		default:
 			return string(val), nil
 		}
