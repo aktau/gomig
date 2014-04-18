@@ -19,7 +19,7 @@ func GenericToPostgresType(genericType *common.Type) string {
 	modifier := gen.Modifier
 
 	switch name {
-	case "text":
+	case common.TypeText:
 		/* the typical varchar type if its maximum is lower than 200, we
 		 * assume they actually meant it */
 		if gen.HasMax() && max < 200 {
@@ -28,19 +28,19 @@ func GenericToPostgresType(genericType *common.Type) string {
 
 		/* if the text type has no maximum (or a maximum above 200, we assume text) */
 		return "text"
-	case "char":
+	case common.TypeChar:
 		return fmt.Sprintf("character(%v)", max)
-	case "float":
+	case common.TypeFloat:
 		return "real"
-	case "double":
+	case common.TypeDouble:
 		return "double precision"
-	case "numeric":
+	case common.TypeNumeric:
 		return fmt.Sprintf("numeric(%v, %v)", precision, scale)
-	case "bit":
-		return fmt.Sprintf("bit(%v)", max)
-	case "blob":
+	case common.TypeBit:
+		return fmt.Sprintf("bit varying(%v)", max)
+	case common.TypeBlob:
 		return "bytea"
-	case "integer":
+	case common.TypeInteger:
 		switch modifier {
 		case common.TypeSmall:
 			return "smallint"
@@ -54,7 +54,7 @@ func GenericToPostgresType(genericType *common.Type) string {
 		default:
 			return "integer"
 		}
-	case "set":
+	case common.TypeSet:
 		return "text[]"
 	default:
 		return name
@@ -69,9 +69,9 @@ func RawToPostgres(val []byte, origType *common.Type) (string, error) {
 		return "NULL", nil
 	} else {
 		switch origType.Name {
-		case "text", "char":
+		case common.TypeText, common.TypeChar:
 			return "$$" + string(val) + "$$", nil
-		case "boolean":
+		case common.TypeBool:
 			/* ascii(48) = "0" and ascii(49) = "1" */
 			switch val[0] {
 			case 48:
@@ -81,7 +81,7 @@ func RawToPostgres(val []byte, origType *common.Type) (string, error) {
 			default:
 				return "", fmt.Errorf("postgres: did not recognize bool value: string(%v) = %v, val[0] = %v", val, string(val), val[0])
 			}
-		case "integer", "float", "double":
+		case common.TypeNumeric, common.TypeInteger, common.TypeFloat, common.TypeDouble:
 			return string(val), nil
 		default:
 			return string(val), nil
@@ -93,25 +93,25 @@ func NewTypedSlice(src *common.Table) []interface{} {
 	vals := make([]interface{}, len(src.Columns))
 	for i, col := range src.Columns {
 		switch col.Type.Name {
-		case "boolean":
+		case common.TypeBool:
 			if col.Null {
 				vals[i] = new(sql.NullBool)
 			} else {
 				vals[i] = new(bool)
 			}
-		case "float", "double", "numeric":
+		case common.TypeNumeric, common.TypeFloat, common.TypeDouble:
 			if col.Null {
 				vals[i] = new(sql.NullFloat64)
 			} else {
 				vals[i] = new(float64)
 			}
-		case "integer":
+		case common.TypeInteger:
 			if col.Null {
 				vals[i] = new(sql.NullInt64)
 			} else {
 				vals[i] = new(int64)
 			}
-		case "blob":
+		case common.TypeBlob:
 			/* do we have a suitable NullBlob or NullByte somewhere? I bet
 			 * this gives problems somehow with NULLable blob fields... */
 			vals[i] = new([]byte)
