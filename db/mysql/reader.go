@@ -12,6 +12,13 @@ var (
 	READER_VERBOSE = false
 )
 
+var (
+	mysqlInit = []string{
+		"SET collation_connection = utf8_general_ci",
+		"SET NAMES utf8",
+	}
+)
+
 type MysqlReader struct {
 	*sql.DB
 }
@@ -20,6 +27,15 @@ func OpenReader(conf *Config) (*MysqlReader, error) {
 	db, err := openDB(conf)
 	if err != nil {
 		return nil, err
+	}
+
+	log.Printf("mysql/openreader: initializing")
+	for _, stmt := range mysqlInit {
+		log.Printf("%v", stmt)
+		if _, err := db.Exec(stmt); err != nil {
+			defer db.Close()
+			return nil, err
+		}
 	}
 
 	return &MysqlReader{db}, nil
@@ -187,7 +203,10 @@ func (r *MysqlReader) CreateProjection(name string, body string, engine string, 
 		engineSQL = " ENGINE=" + strings.ToUpper(engine)
 	}
 
-	stmt := fmt.Sprintf("CREATE TABLE %v%v%v AS (\n%v\n);", name, createPk, engineSQL, body)
+	collation := " CHARACTER SET utf8 COLLATE utf8_general_ci"
+
+	stmt := fmt.Sprintf("CREATE TABLE %v%v%v%v AS (\n%v\n);",
+		name, createPk, engineSQL, collation, body)
 
 	if READER_VERBOSE {
 		log.Printf("mysql: creating projection:\n%v\n", stmt)
