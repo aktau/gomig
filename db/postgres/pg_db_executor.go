@@ -61,7 +61,7 @@ func (e *PgDbExecutor) BulkFinish() (err error) {
 	stmt := e.bulkStmt
 	defer func() {
 		cerr := stmt.Close()
-		if err == nil {
+		if err == nil && cerr != nil {
 			log.Println("pg_executor: could not properly close bulk statement", cerr)
 			err = cerr
 		}
