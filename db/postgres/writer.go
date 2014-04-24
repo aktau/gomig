@@ -84,7 +84,7 @@ func (w *genericPostgresWriter) bulkTransfer(src *Table, dstName string, rows *s
 	return
 }
 
-func (w *genericPostgresWriter) normalTransfer(src *Table, dstName string, rows *sql.Rows, linesPerStatement int) error {
+func (w *genericPostgresWriter) normalTransfer(src *Table, dstName string, rows *sql.Rows) error {
 	/* an alternate way to do this, with type assertions
 	 * but possibly less accurately: http://go-database-sql.org/varcols.html */
 	pointers := make([]interface{}, len(src.Columns))
@@ -112,7 +112,7 @@ func (w *genericPostgresWriter) normalTransfer(src *Table, dstName string, rows 
 		insertLines = append(insertLines, "("+strings.Join(stringrep, ",")+")")
 		stringrep = stringrep[:0]
 
-		if len(insertLines) > w.insertBulkLimit {
+		if len(insertLines) >= w.insertBulkLimit {
 			err = w.e.Submit(fmt.Sprintf("INSERT INTO %v VALUES\n\t%v;\n",
 				dstName, strings.Join(insertLines, ",\n\t")))
 			if err != nil {
@@ -157,7 +157,7 @@ func (w *genericPostgresWriter) transferTable(src *Table, dstName string, r Read
 			log.Print("postgres: no bulk capability detected, performing normal transfer...")
 		}
 
-		err = w.normalTransfer(src, dstName, rows, w.insertBulkLimit)
+		err = w.normalTransfer(src, dstName, rows)
 	}
 	if err != nil {
 		return err
