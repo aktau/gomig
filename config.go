@@ -13,10 +13,11 @@ type DestinationConfig struct {
 }
 
 type ProjectionConfig struct {
-	Pk     []string          `yaml:"pk,omitempty"`
-	Types  map[string]string `yaml:"column_types,omitempty"`
-	Body   string            `yaml:"body"`
-	Engine string            `yaml:"engine,omitempty"`
+	Pk         []string          `yaml:"pk,omitempty"`
+	Types      map[string]string `yaml:"column_types,omitempty"`
+	Conditions string            `yaml:"destination_conditions,omitempty"`
+	Body       string            `yaml:"body"`
+	Engine     string            `yaml:"engine,omitempty"`
 }
 
 type Config struct {

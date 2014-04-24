@@ -105,11 +105,18 @@ func Convert(r common.ReadCloser, w common.WriteCloser, options *Config, verbosi
 	if !options.SuppressData {
 		if options.Merge {
 			for _, srcTable := range tables {
+				/* is this table a projection? */
+				var extraDstCond string
+				if meta, ok := options.Projections[srcTable.Name]; ok {
+					extraDstCond = meta.Conditions
+				}
+
 				if VERBOSE {
 					log.Println("converter: merging table", srcTable.Name)
 				}
+
 				dstTableName := strmap(srcTable.Name, options.TableMap)
-				err := w.MergeTable(srcTable, dstTableName, r)
+				err := w.MergeTable(srcTable, dstTableName, extraDstCond, r)
 				if err != nil {
 					return err
 				}

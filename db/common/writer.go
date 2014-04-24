@@ -11,7 +11,7 @@ type Writer interface {
 	*/
 
 	/* merge the contents of table */
-	MergeTable(src *Table, dstName string, r Reader) error
+	MergeTable(src *Table, dstName, extraDstCond string, r Reader) error
 
 	/* (over)write the contents of table */
 	/* WriteTable(t *Table) error */

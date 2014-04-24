@@ -168,7 +168,7 @@ func (w *genericPostgresWriter) transferTable(src *Table, dstName string, r Read
 
 /* how to do an UPSERT/MERGE in PostgreSQL
  * http://stackoverflow.com/questions/17267417/how-do-i-do-an-upsert-merge-insert-on-duplicate-update-in-postgresq */
-func (w *genericPostgresWriter) MergeTable(src *Table, dstName string, r Reader) error {
+func (w *genericPostgresWriter) MergeTable(src *Table, dstName, extraDstCond string, r Reader) error {
 	tmpName := "gomig_tmp"
 
 	err := w.e.Begin(fmt.Sprintf("merge table %v into table %v",
@@ -237,6 +237,19 @@ WHERE  %v;`, dstName, strings.Join(colassign, ",\n       "), tmpName, pkWherePar
 		return err
 	}
 
+	/* if there is an extra condition, make sure it attaches cleanly to the
+	 * rest of the query. */
+	if extraDstCond != "" {
+		extraDstCond = strings.TrimSpace(extraDstCond)
+		if !strings.HasPrefix(extraDstCond, "and") &&
+			!strings.HasPrefix(extraDstCond, "AND") &&
+			!strings.HasPrefix(extraDstCond, "or") &&
+			!strings.HasPrefix(extraDstCond, "OR") {
+			extraDstCond = "AND " + extraDstCond
+		}
+		extraDstCond = "\n" + extraDstCond
+	}
+
 	/* INSERT from temp table to target table based on PK */
 	err = w.e.Submit(fmt.Sprintf(`
 INSERT INTO %[1]v (%[3]v)
@@ -245,8 +258,9 @@ FROM   %[2]v AS src
 LEFT OUTER JOIN %[1]v AS dst ON (
        %[5]v
 )
-WHERE  %[6]v;
-`, dstName, tmpName, strings.Join(colnames, ", "), srccolPart, pkWherePart, pkIsNullPart))
+WHERE  %[6]v%[7]v;
+`, dstName, tmpName, strings.Join(colnames, ", "), srccolPart,
+		pkWherePart, pkIsNullPart, extraDstCond))
 	if err != nil {
 		return err
 	}
