@@ -171,8 +171,8 @@ func (w *genericPostgresWriter) transferTable(src *Table, dstName string, r Read
 func (w *genericPostgresWriter) MergeTable(src *Table, dstName string, r Reader) error {
 	tmpName := "gomig_tmp"
 
-	err := w.e.Begin(
-		fmt.Sprintf("merge table %v into table %v", src.Name, dstName))
+	err := w.e.Begin(fmt.Sprintf("merge table %v into table %v",
+		src.Name, dstName))
 	if err != nil {
 		return err
 	}
@@ -243,7 +243,7 @@ INSERT INTO %[1]v (%[3]v)
 SELECT %[4]v
 FROM   %[2]v AS src
 LEFT OUTER JOIN %[1]v AS dst ON (
-	   %[5]v
+       %[5]v
 )
 WHERE  %[6]v;
 `, dstName, tmpName, strings.Join(colnames, ", "), srccolPart, pkWherePart, pkIsNullPart))
