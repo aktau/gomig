@@ -23,6 +23,7 @@ const (
 	TypeTime      = "time"
 	TypeTimeStamp = "timestamp"
 	TypeSet       = "set"
+	TypeJson      = "json"
 )
 
 type Type struct {

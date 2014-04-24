@@ -56,6 +56,8 @@ func GenericToPostgresType(genericType *common.Type) string {
 		}
 	case common.TypeSet:
 		return "text[]"
+	case common.TypeJson:
+		return "json"
 	default:
 		return name
 	}
@@ -69,7 +71,7 @@ func RawToPostgres(val []byte, origType *common.Type) (string, error) {
 		return "NULL", nil
 	} else {
 		switch origType.Name {
-		case common.TypeText, common.TypeChar:
+		case common.TypeText, common.TypeChar, common.TypeJson:
 			return "$$" + string(val) + "$$", nil
 		case common.TypeBool:
 			/* ascii(48) = "0" and ascii(49) = "1" */
