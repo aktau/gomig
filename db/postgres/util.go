@@ -75,9 +75,9 @@ func RawToPostgres(val []byte, origType *common.Type) (string, error) {
 			/* ascii(48) = "0" and ascii(49) = "1" */
 			switch val[0] {
 			case 48:
-				return "f", nil
+				return "'f'", nil
 			case 49:
-				return "t", nil
+				return "'t'", nil
 			default:
 				return "", fmt.Errorf("postgres: did not recognize bool value: string(%v) = %v, val[0] = %v", val, string(val), val[0])
 			}
