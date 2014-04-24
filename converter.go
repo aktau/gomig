@@ -75,6 +75,11 @@ func Convert(r common.ReadCloser, w common.WriteCloser, options *Config, verbosi
 
 	tables := r.FilteredTables(options.OnlyTables, options.ExcludeTables)
 
+	/* sort the tables according to only tables if "only tables" was
+	 * specified. This is a primitive way to be able to specify some
+	 * ordering among the tables. */
+	OrderTableByNamesList(tables, options.OnlyTablesList)
+
 	/* override types if specified in the options */
 	for _, table := range tables {
 		/* is this table a projection? */

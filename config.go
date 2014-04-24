@@ -33,11 +33,14 @@ type Config struct {
 	Merge        bool                         `yaml:"merge"`
 	Timezone     bool                         `yaml:"timezone"`
 
+	/* the included and excluded tables as both a map and a list, depending
+	 * on what's most convenient. Note that the map version have last the
+	 * ordering information. */
 	OnlyTables     map[string]bool `yaml:"-"`
-	PrivOnlyTables []string        `yaml:"only_tables,omitempty"`
+	OnlyTablesList []string        `yaml:"only_tables,omitempty"`
 
 	ExcludeTables     map[string]bool `yaml:"-"`
-	PrivExcludeTables []string        `yaml:"exclude_tables,omitempty"`
+	ExcludeTablesList []string        `yaml:"exclude_tables,omitempty"`
 }
 
 func LoadConfig(file string) (*Config, error) {
@@ -57,8 +60,8 @@ func LoadConfig(file string) (*Config, error) {
 		return nil, err
 	}
 
-	c.OnlyTables = stringSliceToSet(c.PrivOnlyTables)
-	c.ExcludeTables = stringSliceToSet(c.PrivExcludeTables)
+	c.OnlyTables = stringSliceToSet(c.OnlyTablesList)
+	c.ExcludeTables = stringSliceToSet(c.ExcludeTablesList)
 
 	return &c, err
 }
