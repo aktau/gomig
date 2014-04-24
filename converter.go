@@ -75,6 +75,27 @@ func Convert(r common.ReadCloser, w common.WriteCloser, options *Config, verbosi
 
 	tables := r.FilteredTables(options.OnlyTables, options.ExcludeTables)
 
+	/* override types if specified in the options */
+	for _, table := range tables {
+		/* is this table a projection? */
+		meta, ok := options.Projections[table.Name]
+		if !ok {
+			continue
+		}
+
+		/* see if any of the columns require a different type than the
+		 * one we derived */
+		for _, col := range table.Columns {
+			newtype, ok := meta.Types[col.Name]
+			if !ok {
+				continue
+			}
+
+			col.Type = common.SimpleType(newtype)
+			col.RawType = newtype
+		}
+	}
+
 	if !options.SuppressDdl {
 		createTables(tables, w)
 	}
