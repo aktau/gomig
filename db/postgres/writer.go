@@ -3,9 +3,10 @@ package postgres
 import (
 	"database/sql"
 	"fmt"
-	. "github.com/aktau/gomig/db/common"
 	"log"
 	"strings"
+
+	. "github.com/aktau/gomig/db/common"
 )
 
 var PG_W_VERBOSE = true
@@ -227,14 +228,18 @@ func (w *genericPostgresWriter) MergeTable(src *Table, dstName, extraDstCond str
 	pkIsNullPart := strings.Join(pkIsNull, "\nAND    ")
 	srccolPart := strings.Join(srccol, ",\n       ")
 
-	/* UPDATE from temp table to target table based on PK */
-	err = w.e.Submit(fmt.Sprintf(`
+	/* it's possible this table is all primary key (as far as we know),
+	 * in which case we don't need the update part */
+	if len(colassign) != 0 {
+		/* UPDATE from temp table to target table based on PK */
+		err = w.e.Submit(fmt.Sprintf(`
 UPDATE %v AS dst
 SET    %v
 FROM   %v AS src
 WHERE  %v;`, dstName, strings.Join(colassign, ",\n       "), tmpName, pkWherePart))
-	if err != nil {
-		return err
+		if err != nil {
+			return err
+		}
 	}
 
 	/* if there is an extra condition, make sure it attaches cleanly to the
