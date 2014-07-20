@@ -172,15 +172,15 @@ func (w *genericPostgresWriter) transferTable(src *Table, dstName string, r Read
 func (w *genericPostgresWriter) MergeTable(src *Table, dstName, extraDstCond string, r Reader) error {
 	tmpName := "gomig_tmp"
 
-	err := w.e.Begin(fmt.Sprintf("merge table %v into table %v",
-		src.Name, dstName))
-	if err != nil {
+	mergeTableI := fmt.Sprintf("merge table %v into table %v",
+		src.Name, dstName)
+	if err := w.e.Begin(mergeTableI); err != nil {
 		return err
 	}
 
 	/* create temporary table */
-	err = w.e.Submit(fmt.Sprintf("CREATE TEMPORARY TABLE %v (\n\t%v\n)\nON COMMIT DROP;\n", tmpName, ColumnsSql(src)))
-	if err != nil {
+	tempTableQ := fmt.Sprintf("CREATE TEMPORARY TABLE %v (\n\t%v\n)\nON COMMIT DROP;\n", tmpName, ColumnsSql(src))
+	if err := w.e.Submit(tempTableQ); err != nil {
 		return err
 	}
 
@@ -188,8 +188,7 @@ func (w *genericPostgresWriter) MergeTable(src *Table, dstName, extraDstCond str
 		log.Println("postgres: preparing to read values from source db")
 	}
 
-	err = w.transferTable(src, tmpName, r)
-	if err != nil {
+	if err := w.transferTable(src, tmpName, r); err != nil {
 		return err
 	}
 
@@ -198,14 +197,13 @@ func (w *genericPostgresWriter) MergeTable(src *Table, dstName, extraDstCond str
 	}
 
 	/* analyze the temp table, for performance */
-	err = w.e.Submit(fmt.Sprintf("ANALYZE %v;\n", tmpName))
-	if err != nil {
+	if err := w.e.Submit(fmt.Sprintf("ANALYZE %v;\n", tmpName)); err != nil {
 		return err
 	}
 
 	/* lock the target table */
-	err = w.e.Submit(fmt.Sprintf("LOCK TABLE %v IN EXCLUSIVE MODE;", dstName))
-	if err != nil {
+	lockTableQ := fmt.Sprintf("LOCK TABLE %v IN EXCLUSIVE MODE;", dstName)
+	if err := w.e.Submit(lockTableQ); err != nil {
 		return err
 	}
 
@@ -232,12 +230,12 @@ func (w *genericPostgresWriter) MergeTable(src *Table, dstName, extraDstCond str
 	 * in which case we don't need the update part */
 	if len(colassign) != 0 {
 		/* UPDATE from temp table to target table based on PK */
-		err = w.e.Submit(fmt.Sprintf(`
+		updateQ := fmt.Sprintf(`
 UPDATE %v AS dst
 SET    %v
 FROM   %v AS src
-WHERE  %v;`, dstName, strings.Join(colassign, ",\n       "), tmpName, pkWherePart))
-		if err != nil {
+WHERE  %v;`, dstName, strings.Join(colassign, ",\n       "), tmpName, pkWherePart)
+		if err := w.e.Submit(updateQ); err != nil {
 			return err
 		}
 	}
@@ -256,17 +254,16 @@ WHERE  %v;`, dstName, strings.Join(colassign, ",\n       "), tmpName, pkWherePar
 	}
 
 	/* INSERT from temp table to target table based on PK */
-	err = w.e.Submit(fmt.Sprintf(`
+	insertQ := fmt.Sprintf(`
 INSERT INTO %[1]v (%[3]v)
 SELECT %[4]v
 FROM   %[2]v AS src
 LEFT OUTER JOIN %[1]v AS dst ON (
        %[5]v
 )
-WHERE  %[6]v%[7]v;
-`, dstName, tmpName, strings.Join(colnames, ", "), srccolPart,
-		pkWherePart, pkIsNullPart, extraDstCond))
-	if err != nil {
+WHERE  %[6]v%[7]v;`, dstName, tmpName, strings.Join(colnames, ", "), srccolPart,
+		pkWherePart, pkIsNullPart, extraDstCond)
+	if err := w.e.Submit(insertQ); err != nil {
 		return err
 	}
 
@@ -274,8 +271,7 @@ WHERE  %[6]v%[7]v;
 		log.Print("postgres: statements completed, executing transaction")
 	}
 
-	err = w.e.Commit()
-	return err
+	return w.e.Commit()
 }
 
 func (w *genericPostgresWriter) Close() error {
