@@ -74,11 +74,11 @@ func (w *genericPostgresWriter) bulkTransfer(src *Table, dstName string, rows *s
 
 	for rows.Next() {
 		if err = rows.Scan(vals...); err != nil {
-			return fmt.Errorf("postgres: error while reading from source:", err)
+			return fmt.Errorf("postgres: error while reading from source: %v", err)
 		}
 
 		if err = ex.BulkAddRecord(vals...); err != nil {
-			return fmt.Errorf("postgres: error during bulk insert:", err)
+			return fmt.Errorf("postgres: error during bulk insert: %v", err)
 		}
 	}
 

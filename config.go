@@ -2,8 +2,9 @@ package main
 
 import (
 	"fmt"
-	"github.com/aktau/gomig/db/common"
 	"io/ioutil"
+
+	"github.com/aktau/gomig/db/common"
 	"launchpad.net/goyaml"
 )
 
@@ -84,7 +85,8 @@ func (c *Config) Validate() error {
 	}
 
 	if c.Destination.File == "" && c.Destination.Postgres == nil {
-		return fmt.Errorf("either file or postgres has to be specified in the destination field of the config file", c)
+		return fmt.Errorf("either file or postgres has to be specified in "+
+			"the destination field of the config file: %v", c)
 	}
 
 	return nil

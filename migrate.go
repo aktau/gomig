@@ -2,9 +2,10 @@ package main
 
 import (
 	"fmt"
+	"log"
+
 	"github.com/aktau/gomig/db"
 	"github.com/aktau/gomig/db/common"
-	"log"
 )
 
 const (
@@ -52,7 +53,7 @@ func (x *MigrateCommand) Execute(args []string) error {
 		writer, err = db.OpenWriter("postgres", conf.Destination.Postgres)
 	}
 	if err != nil {
-		return fmt.Errorf("gomig: error while creating writer, err", err)
+		return fmt.Errorf("gomig: error while creating writer: %v", err)
 	}
 	defer writer.Close()
 
