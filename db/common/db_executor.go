@@ -13,10 +13,17 @@ var (
 type DbExecutor struct {
 	db *sql.DB
 	tx *sql.Tx
+
+	err func(err error) error // can create for more helpful messages
 }
 
-func NewDbExecutor(db *sql.DB) (*DbExecutor, error) {
-	return &DbExecutor{db, nil}, nil
+func identity(err error) error { return err }
+
+func NewDbExecutor(db *sql.DB, err func(error) error) (*DbExecutor, error) {
+	if err == nil {
+		err = identity
+	}
+	return &DbExecutor{db: db, tx: nil, err: err}, nil
 }
 
 func (e *DbExecutor) Begin(name string) error {
@@ -31,7 +38,7 @@ func (e *DbExecutor) Begin(name string) error {
 	/* start transaction */
 	tx, err := e.db.Begin()
 	if err != nil {
-		return nil
+		return e.err(err)
 	}
 
 	e.tx = tx
@@ -44,7 +51,7 @@ func (e *DbExecutor) Commit() error {
 	}
 	defer func() { e.tx = nil }()
 
-	return e.tx.Commit()
+	return e.err(e.tx.Commit())
 }
 
 func (e *DbExecutor) Rollback() error {
@@ -53,7 +60,7 @@ func (e *DbExecutor) Rollback() error {
 	}
 	defer func() { e.tx = nil }()
 
-	rerr := e.tx.Rollback()
+	rerr := e.err(e.tx.Rollback())
 	if rerr != nil && DBEXEC_VERBOSE {
 		log.Printf("DbExecutor: error while rolling back: %v", rerr)
 	}
@@ -63,6 +70,7 @@ func (e *DbExecutor) Rollback() error {
 
 func (e *DbExecutor) submitSimple(stmt string) error {
 	if _, err := e.db.Exec(stmt); err != nil {
+		err = e.err(err)
 		return fmt.Errorf("'%v' while executing statement\n'%v'", err, stmt)
 	}
 	return nil
@@ -71,8 +79,9 @@ func (e *DbExecutor) submitSimple(stmt string) error {
 func (e *DbExecutor) submitTransactional(stmt string) error {
 	_, err := e.tx.Exec(stmt)
 	if err != nil {
+		err = e.err(err)
 		e.Rollback()
-		return fmt.Errorf("'%v' while executing statement\n'%v' in transaction", err, stmt)
+		return fmt.Errorf("'%v' while executing statement\n%v in transaction", err, stmt)
 	}
 	return nil
 }
@@ -157,5 +166,5 @@ func (e *DbExecutor) GetTx() *sql.Tx {
 
 /* warning: closes the db connection that was passed to the constructor */
 func (e *DbExecutor) Close() error {
-	return e.db.Close()
+	return e.err(e.db.Close())
 }

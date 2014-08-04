@@ -3,9 +3,11 @@ package postgres
 import (
 	"database/sql"
 	"errors"
+	"fmt"
+	"log"
+
 	"github.com/aktau/gomig/db/common"
 	"github.com/lib/pq"
-	"log"
 )
 
 var (
@@ -17,8 +19,19 @@ type PgDbExecutor struct {
 	bulkStmt *sql.Stmt
 }
 
+// errfn turns generic errors into more informational ones if possible
+func errfn(err error) error {
+	switch err := err.(type) {
+	case *pq.Error:
+		return fmt.Errorf("Error %v\nMESSAGE: %s\nDETAIL: %s\nWHERE: %s",
+			err.Code, err.Message, err.Detail, err.Where)
+	default:
+		return err
+	}
+}
+
 func NewPgDbExecutor(db *sql.DB) (*PgDbExecutor, error) {
-	base, err := common.NewDbExecutor(db)
+	base, err := common.NewDbExecutor(db, errfn)
 	if err != nil {
 		return nil, err
 	}
